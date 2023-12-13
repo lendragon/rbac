@@ -1,0 +1,50 @@
+plugins {
+    id 'java'
+    id 'idea' /* 同上  让Gradle自动生成Intellij的项目文件*/
+    id "eclipse"
+    id 'maven'
+    id 'maven-publish'
+}
+
+group 'com.apexinfo.livecloud.server.plugins.product'
+version '1.0.0'
+
+
+repositories {
+    mavenLocal()
+    maven {
+        url "https://oss.apexsoft.com.cn/repository/maven-public/"
+        credentials {
+            username = "${NEXUS_USER}"
+            password = "${NEXUS_PASSWORD}"
+        }
+    }
+
+    maven {
+        url "http://192.168.43.54:8081/repository/maven-public/"
+        credentials {
+            username = "${BPM_NEXUS_USER}"
+            password = "${BPM_NEXUS_PASSWORD}"
+        }
+    }
+
+    maven{ url 'https://maven.aliyun.com/repository/public'}
+    maven{ url 'https://maven.aliyun.com/repository/central'}
+
+    mavenCentral()
+}
+
+dependencies {
+
+}
+
+test {
+    useJUnitPlatform()
+}
+
+//编译JAVA文件时采用UTF-8
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
+}
+
+apply from: './task.gradle'

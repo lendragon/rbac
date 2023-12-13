@@ -1,0 +1,389 @@
+
+def creator = Util.toString("${LiveBPM_COLUD_CREATOR}")                    //'谢威'
+def importDir = Util.toString("${LiveBPM_COLUD_SERVER_IMPORT_DIR}")        //"/Users/xiewei/Workspaces/LiveBOS/phoenix/tomcat_eclipse/LiveBOS/LiveBOSCore/WEB-INF"
+def thirdPartyLibDir = project.getRootDir()
+
+/**
+ * 拷贝打包文件到build/outputs
+ */
+class OutputTask extends DefaultTask {
+    @Optional
+    String creator = 'LiveCloud'
+    @Optional
+    String description = ""
+
+    @TaskAction
+    def build(){
+        if("unspecified".equals(project.version)){
+            return;
+        }
+        def rootScript = project.getProperties().get("rootScript")
+        if(rootScript){
+            return;
+        }
+
+        def src = project.getProperties().get("projectDir").toString() + "/src"
+        File srcFile = new File(src)
+
+        if(!srcFile.exists()){
+            return;
+        }
+
+        // push编译文件路径
+        List<String> output = new ArrayList()
+        output.add(project.getProperties().get("buildDir").toString() + "/outputs/tomcat")
+
+        // 判断是否需要拷贝到本机测试环境tomcat
+//        def devPath = project.getProperties().get("LiveBPM_COLUD_SERVER_DEV_PATH")
+        def devPath = project.getProperties().get("LiveBPM_COLUD_SERVER_DEV_PATH_PROJECT")
+        if(!(devPath == null || "".equals(devPath) || "null".equals(devPath))){
+            output.add(devPath)
+        }
+
+        operateFile(output)
+
+    }
+
+    def operateFile(List<String> output){
+
+        output.each {outputDir ->
+            def outputName = Util.getProjectName(project.group, project.name)
+            def buildDir = project.buildDir// "build"
+            def outputWebDir = outputDir + "/LiveBOS/LiveBOSCore"
+            def outputPluginDir = outputWebDir + "/plug-in"
+            def outputWebInfDir = outputWebDir + "/WEB-INF"
+            def outputJarDir = outputWebInfDir + "/lib"                                 // jar
+            def outputClassesDir = outputWebInfDir + "/classes"                         // 配置
+            def outputMetaDir = outputClassesDir + "/META-INF/services"                 // Java SPI
+            def outputVersionDir = outputClassesDir + "/META-INF/version"               // 版本信息
+
+            def filePaths = [
+                    [outputJarDir, "${buildDir}/libs/${project.name}-${project.version}.jar", outputName + ".jar"],
+                    [outputPluginDir, "${buildDir}/resources/main/plug-in"],
+                    [outputClassesDir, "${buildDir}/resources/main/config"],
+                    [outputWebInfDir, "${buildDir}/resources/main/WEB-INF"],
+                    [outputMetaDir, "${buildDir}/resources/main/META-INF/services/javax.servlet.ServletContainerInitializer"],
+                    [outputVersionDir]
+            ]
+
+            // 获取全部前端模块目录文件夹名称
+            File rootDir = project.rootDir;
+            File[] fs = rootDir.listFiles();
+            for (File f : fs) {
+                if(f.getName().toLowerCase().startsWith("frontend")){
+                    filePaths.push([outputWebDir, f.getAbsolutePath() + "/build"]);
+                }
+            }
+
+            filePaths.each{ filePath ->
+                File file = new File(filePath[0])
+                if (!file.exists()) {
+                    file.mkdirs()
+                }
+                if(filePath.size() > 1){
+                    File sourceFile = new File(filePath[1])
+                    if (sourceFile.exists()) {
+                        project.copy {
+                            from(filePath[1])
+                            into(filePath[0])
+                            if(filePath.size() == 3){
+                                rename{filePath[2]}
+                            }
+                        }
+                    }
+                }
+            }
+
+            // build version.xml
+            def xmlFile = "${outputVersionDir}/${outputName}.xml"
+            File file = new File(xmlFile)
+
+            if(!file.exists()){
+                file.createNewFile()
+            }
+
+            def node = new XmlParser().parseText(
+                    "<configuration>" +
+                            "<group>" + project.group + "</group>" +
+                            "<module>" + project.name + "</module>" +
+                            "<version>" + project.version + "</version>" +
+                            "<build-date>" + Util.getCreatedDate() + "</build-date>" +
+                            "<build-creator>" + Util.toString(creator) + "</build-creator>" +
+                            "<description>" + description + "</description>" +
+                            "</configuration>")
+
+            file.write(groovy.xml.XmlUtil.serialize(node))
+        }
+    }
+}
+
+
+/**
+ * build全部前端工程
+ */
+class BuildFrontendTask extends DefaultTask {
+
+    @Override
+    Task configure(Closure closure) {
+        super.configure(closure)
+        // 获取全部前端模块目录文件夹名称
+        File rootDir = project.rootDir;
+        print(rootDir)
+        File[] fs = rootDir.listFiles();
+        List<Task> tasks = new ArrayList<>();
+
+        for (File f : fs) {
+            String name = f.getName();
+            if(name.toLowerCase().startsWith("frontend")){
+                Set<Task> taskSet = project.project(name).getTasksByName("buildJS", true);
+                tasks.addAll(taskSet);
+            }
+        }
+        this.finalizedBy(tasks);
+    }
+
+}
+
+class Util {
+    static def getProjectName(group, baseName) {
+        def g = group.toString().replace("com.", "");
+        def n = baseName.replace("_", "-");
+        def v = (g + "-" + n).replace(".", "-");
+        return v.toLowerCase();
+    }
+
+    static def getCreatedDate() {
+        return new Date().format("yyyy-MM-dd HH:mm:ss", TimeZone.getTimeZone("GMT+08:00"));
+    }
+
+    static def getImplementationVersion(version){
+        return version + "." + new Date().format("yyyy.MM.dd.HH.mm.ss", TimeZone.getTimeZone("GMT+08:00"));
+    }
+
+    static def toString(val){
+        return new String(val.getBytes("iso8859-1"), "UTF-8");
+    }
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+/* java编译的时候缺省状态下会因为中文字符而失败 */
+//[compileJava, compileTestJava, javadoc]*.options*.encoding = 'UTF-8'
+
+repositories {
+    mavenLocal()
+
+
+    maven {
+        url "https://oss.apexsoft.com.cn/repository/maven-public/"
+        credentials {
+            username = "${NEXUS_USER}"
+            password = "${NEXUS_PASSWORD}"
+        }
+    }
+
+    maven {
+        url "http://192.168.43.54:8081/repository/maven-public/"
+        credentials {
+            username = "${BPM_NEXUS_USER}"
+            password = "${BPM_NEXUS_PASSWORD}"
+        }
+    }
+
+    maven{ url 'https://maven.aliyun.com/repository/public'}
+    maven{ url 'https://maven.aliyun.com/repository/central'}
+
+    mavenCentral()
+}
+
+/* 添加通用依赖 */
+dependencies {
+    // Use JUnit test framework
+//    testImplementation 'junit:junit:4.12'
+
+    // thymeleaf
+//    compile(group: 'org.thymeleaf', name: 'thymeleaf-spring5', version: '3.0.9.RELEASE')
+//    compile(group: 'org.unbescape', name: 'unbescape', version: '1.1.6.RELEASE')
+//    compile(group: 'nz.net.ultraq.thymeleaf', name: 'thymeleaf-layout-dialect', version: '2.2.1')
+//    compile(group: 'org.attoparser', name: 'attoparser', version: '2.0.3.RELEASE')
+
+    // servlet
+//    compile(group: 'org.aspectj', name: 'aspectjweaver', version: '1.8.4')
+//    compileOnly group: 'javax.servlet', name: 'javax.servlet-api', version: '3.1.0'
+//    compileOnly group: 'javax.servlet.jsp', name: 'javax.servlet.jsp-api', version: '2.3.1'
+//    compileOnly group: 'javax.servlet.jsp', name: 'jsp-api', version: '2.1'
+
+    // LiveBOS Core lib|classes
+    compileOnly fileTree(dir: "${importDir}/lib", include: ["*.jar"])
+    compileOnly files("${importDir}/classes")
+    ext.jarTree = fileTree(dir: 'lib', include: '**/*.jar')
+    compileOnly jarTree
+
+    // LiveCloud lib
+//    compile 'com.apexinfo.livecloud.common:Util:1.0.0'
+//    compile 'com.apexinfo.livecloud.common:Transport:1.0.0'
+//    compile 'com.apexinfo.livecloud.license:ClientWorker:1.0.0'
+//    compile 'com.apexinfo.livecloud.server:Core:1.0.0'
+//    compile 'com.apexinfo.livecloud.server.plugins.product:Studio:1.0.0'
+
+    // ThirdpartyLib
+//    compileOnly fileTree(dir: "${thirdPartyLibDir}/ThirdpartyLib", include: ["*.jar"])
+}
+
+test {
+    useJUnitPlatform()
+}
+
+jar {
+    enabled = true
+    exclude([
+            "config/apexinfo/configuration",
+            "config/apexinfo/data",
+            "config/apexinfo/i18n",
+            "META-INF/services/javax.servlet.ServletContainerInitializer",
+            "WEB-INF",
+            "plug-in"
+    ])
+}
+
+jar.doFirst {
+    setVersion(project.version)
+    manifest {
+        attributes(
+                "group": project.group,
+                "module": baseName,
+                "Manifest-Version": project.version,
+                "Implementation-Title": baseName,
+                "Implementation-Version": Util.getImplementationVersion(project.version),
+                "Created-By": Util.toString("${LiveBPM_COLUD_CREATOR}"),
+                "Created-Date": Util.getCreatedDate()
+        )
+    }
+}
+
+// 发布版本到NEXUS
+publishing {
+    repositories {
+        maven {
+            credentials {
+                username = "${BPM_NEXUS_USER}"
+                password = "${BPM_NEXUS_PASSWORD}"
+            }
+            url "http://192.168.43.54:8081/repository/maven-releases"
+        }
+
+        mavenLocal()
+    }
+    publications {
+        artifact(MavenPublication) {
+            from components.java
+        }
+    }
+}
+
+// 拷贝服务端编译后的文件到outputs目录下
+task output(type: OutputTask){
+    creator = "${LiveBPM_COLUD_CREATOR}"
+    description = "UI模块"
+}
+
+/**
+ * 构建前端task
+ * 构建, 发布到outputs和开发环境
+ */
+task buildFrontend(type: BuildFrontendTask){
+
+}
+buildFrontend.finalizedBy(output);
+
+task buildServer(type: Zip){
+
+}
+buildServer.dependsOn(clean);
+buildServer.dependsOn(build);
+buildServer.dependsOn(output);
+
+build.mustRunAfter clean
+output.mustRunAfter build
+
+/**
+ * 构建全部, 服务端和前端
+ */
+task buildAll(type: Zip){
+
+}
+buildAll.dependsOn(buildFrontend);
+buildAll.dependsOn(buildServer);
+
+
+/**
+ * 压缩打包服务端
+ */
+task zipServer(type: Zip){
+    //压缩包名称
+    archiveName "${Util.getImplementationVersion(project.name + "_Server")}.zip"
+    //压缩包输出到的位置
+    destinationDir file('build/zip')
+    //要压缩的文件夹
+    from('build/outputs')
+    exclude('tomcat/LiveBOS/LiveBOSCore/plugins')
+}
+
+/**
+ * 压缩打包前端
+ */
+task zipFrontend(type: Zip){
+    //压缩包名称
+    archiveName "${Util.getImplementationVersion(project.name + "_Frontend")}.zip"
+    //压缩包输出到的位置
+    destinationDir file('build/zip')
+    //要压缩的文件夹
+    from('build/outputs/tomcat/LiveBOS/LiveBOSCore/plugins')
+    into('tomcat/LiveBOS/LiveBOSCore/plugins')
+}
+
+/**
+ * 压缩打包前端和服务端
+ */
+task zipAll(type: Zip){
+    //压缩包名称
+    archiveName "${Util.getImplementationVersion(project.name)}.zip"
+    //压缩包输出到的位置
+    destinationDir file('build/zip')
+    //要压缩的文件夹
+    from('build/outputs')
+}
+
+/**
+ * 发布服务端到BPM仓库
+ */
+publish.dependsOn(buildServer)
+
+
+task publishServer(type: Zip){
+    //压缩包名称
+    archiveName "Server.zip"
+    //压缩包输出到的位置
+    destinationDir file('build/zip')
+    //要压缩的文件夹
+    from('build/outputs')
+    exclude('tomcat/LiveBOS/LiveBOSCore/plugins')
+}
+
+zipAll.dependsOn(buildAll)
+zipServer.dependsOn(buildServer)
+zipFrontend.dependsOn(buildFrontend)
+publishServer.dependsOn(buildServer)
+
+task zipThirdpartyLib(type: Zip){
+    //压缩包名称
+    archiveName "Thirdparty.zip"
+    //压缩包输出到的位置
+    destinationDir file('build/zip')
+    //要压缩的文件夹
+    from('ThirdpartyLib')
+    into('tomcat/LiveBOS/LiveBOSCore/WEB-INF/lib')
+}
+
+zipThirdpartyLib.dependsOn(output)
