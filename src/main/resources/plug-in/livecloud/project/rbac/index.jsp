@@ -10,10 +10,15 @@
     <button id="btn">345</button>
     <script>
       function testInterface() {
-        $.get("${pageContext.request.contextPath}/livecloud/project/user.pagex", (res) => {
+        /*$.get("${pageContext.request.contextPath}/livecloud/project/user.pagex", (res) => {
           alert(res);
           console.log(res);
+        });*/
+        $.post("${pageContext.request.contextPath}/livecloud/project/user.pagex", {"action": "query"}, (res) => {
+          alert(res);
         });
+
+        $.ajax();
       }
       $("#btn").click(testInterface);
     </script>

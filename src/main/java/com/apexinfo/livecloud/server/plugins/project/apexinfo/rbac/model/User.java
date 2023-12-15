@@ -1,117 +1,138 @@
 package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model;
 
+import com.apexinfo.livecloud.server.common.annotation.Column;
+import com.apexinfo.livecloud.server.common.annotation.Table;
+
+import java.io.Serializable;
 import java.util.Date;
 
-public class User {
-    Integer ID;
-    String FNo;
-    String FName;
-    Integer FDept;
-    Integer FSex;
-    Date FBirthDay;
-    String FIdentityNum;
-    String FPhoneNum;
-    Date FEnterTime;
+/**
+ * @ClassName: User
+ * @Description: 用户类, 对应用户表
+ * @Author linlongyue
+ * @Date 2023/12/13
+ * @Version 1.0
+ */
+//@Table("CT_Rbac_User")
+public class User implements Serializable {
+//    @Column("ID")
+    private Long id;
+//    @Column("FNo")
+    private String no;
+//    @Column("FName")
+    private String name;
+//    @Column("FPassword")
+    private String password;
+//    @Column("FSex")
+    private Long sex;
+//    @Column("FBirthDay")
+    private Date birthDay;
+//    @Column("FPhoneNum")
+    private String phoneNum;
+//    @Column("FCreateTime")
+    private Date createTime;
+//    @Column("FUpdateTime")
+    private Date updateTime;
+
+    public User() {
+    }
+
+    public User(Long id, String no, String name, String password, Long sex, Date birthDay, String phoneNum, Date createTime, Date updateTime) {
+        this.id = id;
+        this.no = no;
+        this.name = name;
+        this.password = password;
+        this.sex = sex;
+        this.birthDay = birthDay;
+        this.phoneNum = phoneNum;
+        this.createTime = createTime;
+        this.updateTime = updateTime;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getNo() {
+        return no;
+    }
+
+    public void setNo(String no) {
+        this.no = no;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public Long getSex() {
+        return sex;
+    }
+
+    public void setSex(Long sex) {
+        this.sex = sex;
+    }
+
+    public Date getBirthDay() {
+        return birthDay;
+    }
+
+    public void setBirthDay(Date birthDay) {
+        this.birthDay = birthDay;
+    }
+
+    public String getPhoneNum() {
+        return phoneNum;
+    }
+
+    public void setPhoneNum(String phoneNum) {
+        this.phoneNum = phoneNum;
+    }
+
+    public Date getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(Date createTime) {
+        this.createTime = createTime;
+    }
+
+    public Date getUpdateTime() {
+        return updateTime;
+    }
+
+    public void setUpdateTime(Date updateTime) {
+        this.updateTime = updateTime;
+    }
 
     @Override
     public String toString() {
         return "User{" +
-                "ID=" + ID +
-                ", FNo='" + FNo + '\'' +
-                ", FName='" + FName + '\'' +
-                ", FDept=" + FDept +
-                ", FSex=" + FSex +
-                ", FBirthDay=" + FBirthDay +
-                ", FIdentityNum='" + FIdentityNum + '\'' +
-                ", FPhoneNum='" + FPhoneNum + '\'' +
-                ", FEnterTime=" + FEnterTime +
+                "id=" + id +
+                ", no='" + no + '\'' +
+                ", name='" + name + '\'' +
+                ", password='" + password + '\'' +
+                ", sex=" + sex +
+                ", birthDay=" + birthDay +
+                ", phoneNum='" + phoneNum + '\'' +
+                ", createTime=" + createTime +
+                ", updateTime=" + updateTime +
                 '}';
-    }
-
-    public Integer getID() {
-        return ID;
-    }
-
-    public void setID(Integer ID) {
-        this.ID = ID;
-    }
-
-    public String getFNo() {
-        return FNo;
-    }
-
-    public void setFNo(String FNo) {
-        this.FNo = FNo;
-    }
-
-    public String getFName() {
-        return FName;
-    }
-
-    public void setFName(String FName) {
-        this.FName = FName;
-    }
-
-    public Integer getFDept() {
-        return FDept;
-    }
-
-    public void setFDept(Integer FDept) {
-        this.FDept = FDept;
-    }
-
-    public Integer getFSex() {
-        return FSex;
-    }
-
-    public void setFSex(Integer FSex) {
-        this.FSex = FSex;
-    }
-
-    public Date getFBirthDay() {
-        return FBirthDay;
-    }
-
-    public void setFBirthDay(Date FBirthDay) {
-        this.FBirthDay = FBirthDay;
-    }
-
-    public String getFIdentityNum() {
-        return FIdentityNum;
-    }
-
-    public void setFIdentityNum(String FIdentityNum) {
-        this.FIdentityNum = FIdentityNum;
-    }
-
-    public String getFPhoneNum() {
-        return FPhoneNum;
-    }
-
-    public void setFPhoneNum(String FPhoneNum) {
-        this.FPhoneNum = FPhoneNum;
-    }
-
-    public Date getFEnterTime() {
-        return FEnterTime;
-    }
-
-    public void setFEnterTime(Date FEnterTime) {
-        this.FEnterTime = FEnterTime;
-    }
-
-    public User(Integer ID, String FNo, String FName, Integer FDept, Integer FSex, Date FBirthDay, String FIdentityNum, String FPhoneNum, Date FEnterTime) {
-        this.ID = ID;
-        this.FNo = FNo;
-        this.FName = FName;
-        this.FDept = FDept;
-        this.FSex = FSex;
-        this.FBirthDay = FBirthDay;
-        this.FIdentityNum = FIdentityNum;
-        this.FPhoneNum = FPhoneNum;
-        this.FEnterTime = FEnterTime;
-    }
-
-    public User() {
     }
 }
