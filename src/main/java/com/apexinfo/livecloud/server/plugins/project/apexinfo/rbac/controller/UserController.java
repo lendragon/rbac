@@ -1,18 +1,24 @@
 package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.controller;
 
+import com.apexinfo.livecloud.server.common.exception.PageException;
 import com.apexinfo.livecloud.server.common.exporter.Response;
 import com.apexinfo.livecloud.server.core.web.AbstractController;
 import com.apexinfo.livecloud.server.plugins.product.sql.query.util.MD5Tools;
-import com.apexinfo.livecloud.server.plugins.product.updatePassword.AESUtil;
+import com.apexinfo.livecloud.server.plugins.product.liveid.client.util.AESUtil;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant.UserConstants;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.User;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.UserAddDTO;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.UserDTO;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.service.UserService;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.util.AesDecryptor;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -27,12 +33,13 @@ public class UserController extends AbstractController {
 
     /**
      * 验证前端发送的密码的合法性
+     *
      * @param password
      * @param sign
      * @return
      */
-    private boolean validatePassword(String password, String sign) {
-        String decrypt = AESUtil.decrypt(sign, UserConstants.AES_KEY);
+    private boolean validatePassword(String password, String sign) throws Exception {
+        String decrypt = AesDecryptor.aesDecrypt(sign, UserConstants.AES_KEY, UserConstants.AES_IV);
         if (!decrypt.equals(password)) {
             return false;
         }
@@ -41,6 +48,7 @@ public class UserController extends AbstractController {
 
     /**
      * 查询用户
+     *
      * @param pageNo
      * @param pageSize
      * @param keyword
@@ -56,14 +64,14 @@ public class UserController extends AbstractController {
                           HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
 
-        List<User> users = UserService.getInstance().query(pageNo, pageSize, keyword, id);
-        return Response.ofSuccess(users);
+        UserDTO userDTO = UserService.getInstance().query(pageNo, pageSize, keyword, id);
+        return Response.ofSuccess(userDTO);
     }
 
     /**
      * 新增用户
-     * @param user
-     * @param sign
+     *
+     * @param userAddDTO
      * @param request
      * @param response
      * @return
@@ -71,16 +79,19 @@ public class UserController extends AbstractController {
     @RequestMapping(value = UserConstants.ROUTE_USER,
             params = "action=add", method = RequestMethod.POST)
     @ResponseBody
-    public Response add(@RequestBody User user, @RequestBody String sign,
+    public Response add(@RequestBody UserAddDTO userAddDTO,
                         HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
+        String iv = userAddDTO.getIv();
+        User user = userAddDTO.getUser();
 
-        // 对传输过来的密码进行aes解密并再使用md5加密得到加密后的密码
-        String password = new MD5Tools().stringToMD5(
-                AESUtil.decrypt(user.getPassword(), UserConstants.AES_KEY));
-
+        String password = null;
         // 验证合法性
-        if (!validatePassword(password, sign)) {
+        try {
+            // 对传输过来的密码进行aes解密并再使用md5加密得到加密后的密码
+            password = new MD5Tools().stringToMD5(
+                    AesDecryptor.aesDecrypt(user.getPassword(), UserConstants.AES_KEY, iv));
+        } catch (Exception e) {
             return Response.ofFail("数据异常, 请重新提交");
         }
 
@@ -94,8 +105,8 @@ public class UserController extends AbstractController {
 
     /**
      * 修改用户
-     * @param user
-     * @param sign
+     *
+     * @param userAddDTO
      * @param request
      * @param response
      * @return
@@ -103,16 +114,20 @@ public class UserController extends AbstractController {
     @RequestMapping(value = UserConstants.ROUTE_USER,
             params = "action=update", method = RequestMethod.POST)
     @ResponseBody
-    public Response update(@RequestBody User user, @RequestBody String sign,
+    public Response update(@RequestBody UserAddDTO userAddDTO,
                            HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
 
-        // 对传输过来的密码进行aes解密并再使用md5加密得到加密后的密码
-        String password = new MD5Tools().stringToMD5(
-                AESUtil.decrypt(user.getPassword(), UserConstants.AES_KEY));
+        String iv = userAddDTO.getIv();
+        User user = userAddDTO.getUser();
 
-        // 验证密码合法性
-        if (!validatePassword(password, sign)) {
+        String password = null;
+        // 验证合法性
+        try {
+            // 对传输过来的密码进行aes解密并再使用md5加密得到加密后的密码
+            password = new MD5Tools().stringToMD5(
+                    AesDecryptor.aesDecrypt(user.getPassword(), UserConstants.AES_KEY, iv));
+        } catch (Exception e) {
             return Response.ofFail("数据异常, 请重新提交");
         }
 
@@ -126,6 +141,7 @@ public class UserController extends AbstractController {
 
     /**
      * 修改用户的角色
+     *
      * @param userId
      * @param roleId
      * @param request
@@ -150,6 +166,7 @@ public class UserController extends AbstractController {
 
     /**
      * 删除用户
+     *
      * @param id
      * @param request
      * @param response

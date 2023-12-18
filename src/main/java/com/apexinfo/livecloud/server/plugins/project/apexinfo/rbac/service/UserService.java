@@ -5,6 +5,7 @@ import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.UserMa
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.UserRoleMapper;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.Role;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.User;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.UserDTO;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.log4j.Logger;
 
@@ -43,7 +44,10 @@ public class UserService {
      * @param id
      * @return
      */
-    public List<User> query(Long pageNo, Long pageSize, String keyword, Long id) {
+    public UserDTO query(Long pageNo, Long pageSize, String keyword, Long id) {
+        UserDTO userDTO = new UserDTO();
+        List<User> users = null;
+        int count = 0;
         if (id == null) {
             if (pageNo == null) {
                 pageNo = 1L;
@@ -51,9 +55,18 @@ public class UserService {
             if (pageSize == null) {
                 pageSize = 20L;
             }
-            return userMapper.query(pageNo, pageSize, keyword);
+            users =  userMapper.query(pageNo, pageSize, keyword);
+            count = userMapper.count(keyword);
+            userDTO.setPageSize(Math.toIntExact(pageSize));
+        } else {
+            users = userMapper.queryById(id);
+            count = users.size();
+            userDTO.setPageSize(1);
         }
-        return userMapper.queryById(id);
+        userDTO.setRecords(users);
+        userDTO.setTotal(count);
+
+        return userDTO;
     }
 
 

@@ -14,8 +14,8 @@ public class UserConstants {
 //    public static final String PARAM_ID = "id";
 //    public static final String PARAM_PAGE_NO = "pageNo";
 //    public static final String PARAM_PAGE_SIZE = "pageSize";
-    public static final String AES_KEY = "ThisIsA5tr0ngP@ssw0rd!";
-
+    public static final String AES_KEY = "0123456789abcdef";
+    public static final String AES_IV = "fedcba9876543210";
     /**
      * 用户列表路由
      */

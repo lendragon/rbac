@@ -42,10 +42,10 @@ public class UserMapper extends GeneralMapper {
                             "from CT_Rbac_User where 1 = 1 ");
             // 模糊查询拼接SQL
             if (keyword != null && !keyword.isEmpty()) {
-                SQLCommon.likeContact(sql, keyword, "FNo","FName",
+                SQLCommon.likeContact(sql, keyword, "FNo", "FName",
                         "FSex", "FBirthDay", "FPhoneNum");
             }
-                // 分页查询多个用户
+            // 分页查询多个用户
             ApexRowSet rs = ApexDao.getRowSet(getDataSource(), sql.toString(), (int) pageNo, (int) pageSize);
 
             while (rs != null && rs.next()) {
@@ -69,6 +69,7 @@ public class UserMapper extends GeneralMapper {
 
     /**
      * 根据id查询用户
+     *
      * @param id
      * @return
      */
@@ -76,8 +77,8 @@ public class UserMapper extends GeneralMapper {
         List<User> users = new ArrayList<>();
         try {
             String sql = "select ID, FNo, FName, FPassword, FSex, FBirthDay," +
-                            "       FPhoneNum, FCreateTime, FUpdateTime " +
-                            "from CT_Rbac_User where ID = ? ";
+                    "       FPhoneNum, FCreateTime, FUpdateTime " +
+                    "from CT_Rbac_User where ID = ? ";
             ApexDao dao = new ApexDao();
             dao.prepareStatement(sql);
             dao.setLong(1, id);
@@ -138,13 +139,14 @@ public class UserMapper extends GeneralMapper {
 
     /**
      * 修改用户信息
+     *
      * @param user
      * @return
      */
     public int update(User user) {
         int rows = 0;
         try {
-            String sql = "update CT_Rbac_User set FNo = ?, FName = ?, FPassword = ?," +
+            String sql = "update CT_Rbac_User set FNo = ?, FName = ?, FPassword = FPassword," +
                     "FSex = ?, FBirthDay = ?, FPhoneNum = ?, FUpdateTime = ? " +
                     " where ID = ?";
 
@@ -152,13 +154,18 @@ public class UserMapper extends GeneralMapper {
             dao.prepareStatement(sql);
             dao.setString(1, user.getNo());
             dao.setString(2, user.getName());
-            dao.setString(3, user.getPassword());
-            dao.setObject(4, user.getSex());
-            dao.setObject(5, user.getBirthDay());
-            dao.setString(6, user.getPhoneNum());
-            dao.setObject(7, user.getUpdateTime());
-            dao.setLong(8, user.getId());
+//            dao.setString(3, user.getPassword());
+//            dao.setObject(4, user.getSex());
+//            dao.setObject(5, user.getBirthDay());
+//            dao.setString(6, user.getPhoneNum());
+//            dao.setObject(7, user.getUpdateTime());
+//            dao.setLong(8, user.getId());
 
+            dao.setObject(3, user.getSex());
+            dao.setObject(4, user.getBirthDay());
+            dao.setString(5, user.getPhoneNum());
+            dao.setObject(6, user.getUpdateTime());
+            dao.setLong(7, user.getId());
             rows = dao.executeUpdate(getDataSource());
         } catch (SQLException e) {
             e.printStackTrace();
@@ -186,5 +193,28 @@ public class UserMapper extends GeneralMapper {
         }
 
         return rows;
+    }
+
+    /**
+     * 获取数据库中数据的数量
+     *
+     * @return
+     */
+    public int count(String keyword) {
+        int count = 0;
+        try {
+            StringBuffer sql = new StringBuffer("select count(*) from CT_Rbac_User where 1 = 1 ");
+            if (keyword != null && !keyword.isEmpty()) {
+                SQLCommon.likeContact(sql, keyword, "FNo", "FName",
+                        "FSex", "FBirthDay", "FPhoneNum");
+            }
+            ApexRowSet rs = ApexDao.getRowSet(getDataSource(), sql.toString());
+            if (rs.next()) {
+                count = rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return count;
     }
 }
