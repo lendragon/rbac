@@ -1,0 +1,479 @@
+<!-- <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css"> -->
+<div class="row">
+  <div class="col-md-9">
+    <button id="addUserBtn" class="btn btn-primary">新增</button>
+    <button
+      id="batchDeleteBtn"
+      class="btn btn-danger"
+      disabled
+      onclick="batchDelete()"
+    >
+      批量删除
+    </button>
+  </div>
+  <script>
+    function batchDelete() {
+      let checked = $(".select-row:checked");
+      let usersId = [];
+      checked.each(function () {
+        usersId.push(parseInt($(this).parent().next().text()));
+      });
+      deleteUsers(usersId);
+    }
+  </script>
+  <div class="col-md-3">
+    <form id="searchForm" class="form-inline" role="search">
+      <div class="form-group">
+        <input type="text" class="form-control" placeholder="请输入搜索内容" />
+      </div>
+      <button type="submit" class="btn btn-default">查询</button>
+    </form>
+  </div>
+</div>
+<script>
+  // 监听表单提交事件
+  searchFormEvent();
+</script>
+
+<!-- 展示用户数据的表格 -->
+<table class="table table-striped table-hover">
+  <thead>
+    <tr>
+      <th><input type="checkbox" id="select-all" /></th>
+      <th>ID</th>
+      <th>用户编号</th>
+      <th>用户名</th>
+      <th>性别</th>
+      <th>生日</th>
+      <th>手机号码</th>
+      <th>创建时间</th>
+      <th>修改时间</th>
+      <th class="col-xs-2">操作</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><input type="checkbox" class="select-row" /></td>
+      <th scope="row">1</th>
+      <td>001</td>
+      <td>asdasfasfsa</td>
+      <td>@mdo</td>
+      <td>Mark</td>
+      <td>17705414033</td>
+      <td>@mdo</td>
+      <td>@mdo</td>
+      <td>
+        <button
+          class="btn btn-link btn-no-underline btn-text-size"
+          onclick="userDetail(1)"
+        >
+          查看详情
+        </button>
+        <button
+          class="btn btn-link btn-no-underline btn-text-size"
+          onclick="deleteUsers(1)"
+        >
+          删除
+        </button>
+      </td>
+      <script>
+        // 查看用户详情
+        function userDetail(userId) {
+          createFormBox(
+            "userDetail",
+            "用户详情",
+            [
+              {
+                label: "ID",
+                type: "text",
+                name: "id",
+                required: true,
+                disabled: true,
+                value: 1
+              },
+              {
+                label: "用户编号",
+                type: "text",
+                name: "no",
+                required: true,
+                placeholder: "用户编号",
+                reg: "^[0-9]{3}$",
+                regTitle: "请输入3位数字",
+              },
+              {
+                label: "用户名",
+                type: "text",
+                name: "name",
+                required: true,
+                placeholder: "用户名",
+                reg: "^.{2,12}$",
+                regTitle: "请输入2-12位的字符",
+              },
+              {
+                label: "密码",
+                type: "password",
+                name: "password",
+                required: true,
+                placeholder: "密码",
+                reg: "^[^\u4e00-\u9fa5]{4,16}$",
+                regTitle: "请输入4-16位的数字、字母或特殊字符",
+              },
+              {
+                label: "性别",
+                type: "radio",
+                name: "sex",
+                required: false,
+                options: [
+                  {
+                    name: "无",
+                    value: "",
+                    checked: true,
+                  },
+                  {
+                    name: "男",
+                    value: "1",
+                  },
+                  {
+                    name: "女",
+                    value: "2",
+                  },
+                ],
+                placeholder: "性别",
+              },
+              {
+                label: "出生日期",
+                type: "date",
+                name: "birthDay",
+                required: false,
+                placeholder: "出生日期",
+                value: formatDate(new Date(), false)
+              },
+              {
+                label: "电话",
+                type: "text",
+                name: "phoneNum",
+                required: false,
+                placeholder: "电话",
+                reg: "^$|^[0-9]{7,15}$",
+                regTitle: "请输入有效电话号码",
+              },
+              {
+                label: "创建时间",
+                type: "date",
+                name: "createTime",
+                required: false,
+                disabled: true
+              },
+              {
+                label: "修改时间",
+                type: "date",
+                name: "updateTime",
+                required: false,
+                disabled: true
+              },
+            ],
+            1,
+            (data, closeFun) => {
+              confirmBox("提示", "确定修改吗?", 0, true, true, () => {
+                console.log(data);
+                closeFun();
+              });
+            },
+            "修改"
+          );
+        }
+
+        // 删除用户
+        function deleteUsers(usersId) {
+          confirmBox("提示", "确定删除?", 1, true, true, () => {
+            let data = {};
+            if (typeof usersId === "number") {
+              data.id = [];
+              data.id.push(usersId);
+            } else {
+              data.id = usersId;
+            }
+
+            let a = $.param(data).replaceAll("%5B%5D", "");
+            console.log(a);
+            console.log(JSON.stringify(data));
+            successMessageFloat("删除成功");
+          });
+        }
+      </script>
+    </tr>
+    <tr>
+      <td><input type="checkbox" class="select-row" /></td>
+      <th scope="row">2</th>
+      <td>Jacob</td>
+      <td>Thorn</td>
+      <td>@fat</td>
+    </tr>
+    <tr>
+      <td><input type="checkbox" class="select-row" /></td>
+      <th scope="row">3</th>
+      <td>Larry</td>
+      <td>the Bird</td>
+      <td>@twitter</td>
+    </tr>
+    <tr>
+      <td><input type="checkbox" class="select-row" /></td>
+      <th scope="row">4</th>
+      <td>Larry</td>
+      <td>the Bird</td>
+      <td>@twitter</td>
+    </tr>
+    <tr>
+      <td><input type="checkbox" class="select-row" /></td>
+      <th scope="row">5</th>
+      <td>Larry</td>
+      <td>the Bird</td>
+      <td>@twitter</td>
+    </tr>
+  </tbody>
+</table>
+<script>
+  /* 表格多选框 */
+  // 全选/取消全选
+  // tableCheckBoxAll();
+  // $("#select-all").prop("checked", false);
+  tableCheckBoxEvent();
+</script>
+
+<!-- 底层分页 -->
+<nav aria-label="Page navigation">
+  <ul class="pagination">
+    <li id="lastPageBtn">
+      <a href="#" aria-label="Previous">
+        <span aria-hidden="true">&laquo;</span>
+      </a>
+    </li>
+    <li class="pageBtn" onclick="togglePageBtn(event, undefined)">
+      <a href="#">1</a>
+    </li>
+    <li class="pageBtn" onclick="togglePageBtn(event, undefined)">
+      <a href="#">2</a>
+    </li>
+    <li class="pageBtn" onclick="togglePageBtn(event, undefined)">
+      <a href="#">3</a>
+    </li>
+    <li class="pageBtn" onclick="togglePageBtn(event, undefined)">
+      <a href="#">4</a>
+    </li>
+    <li class="pageBtn" onclick="togglePageBtn(event, undefined)">
+      <a href="#">5</a>
+    </li>
+    <li id="nextPageBtn">
+      <a href="#" aria-label="Next">
+        <span aria-hidden="true">&raquo;</span>
+      </a>
+    </li>
+  </ul>
+</nav>
+<!-- 分页组件点击事件编写 -->
+<script>
+  // 给按钮监听点击事件
+  $(() => {
+    $($(".pageBtn")[pageNo - 1]).addClass("active");
+    $(".pageBtn").click(togglePageBtn);
+    $("#nextPageBtn").click(nextTogglePageBtn);
+    $("#lastPageBtn").click(lastTogglePageBtn);
+    $("#addUserBtn").click(addUserFormBox);
+  });
+
+  // 分页组件点击切换
+  function togglePageBtn(event, object) {
+    //   var activeElement = document.querySelector('.pageBtn .active');
+    // $(activeElement).removeClass('active');
+    let realObject;
+    let activeObject = $(".pageBtn.active");
+    if (typeof object === "undefined") {
+      realObject = $(this);
+    } else {
+      realObject = object;
+    }
+    if (realObject === activeObject) {
+      return;
+    }
+
+    activeObject.removeClass("active");
+    realObject.addClass("active");
+    pageNo = realObject.text();
+  }
+
+  // 下一个按钮
+  function nextTogglePageBtn() {
+    if (pageNo >= $(".pageBtn").length) {
+      return;
+    }
+    togglePageBtn(event, $(".pageBtn.active + .pageBtn"));
+  }
+
+  // 上一个按钮
+  function lastTogglePageBtn() {
+    if (pageNo <= 1) {
+      return;
+    }
+    togglePageBtn(event, $($(".pageBtn")[pageNo - 2]));
+  }
+
+  // 新增用户
+  function addUser(data) {
+    let password = data.password;
+    let hash = CryptoJS.MD5(password).toString();
+    let sign = CryptoJS.AES.encrypt(hash, AES_KEY).toString();
+    password = CryptoJS.AES.encrypt(password, AES_KEY).toString();
+    console.log(
+      CryptoJS.AES.decrypt(password, AES_KEY).toString(CryptoJS.enc.Utf8)
+    );
+    data["password"] = password;
+    data["sign"] = sign;
+    console.log(data);
+    successMessageFloat("新增成功");
+  }
+
+  // 新增用户的表单
+  function addUserFormBox() {
+    createFormBox(
+      "addUser",
+      "新增用户",
+      [
+        {
+          label: "用户编号",
+          type: "text",
+          name: "no",
+          required: true,
+          placeholder: "用户编号",
+          reg: "^[0-9]{3}$",
+          regTitle: "请输入3位数字",
+        },
+        {
+          label: "用户名",
+          type: "text",
+          name: "name",
+          required: true,
+          placeholder: "用户名",
+          reg: "^.{2,12}$",
+          regTitle: "请输入2-12位的字符",
+        },
+        {
+          label: "密码",
+          type: "password",
+          name: "password",
+          required: true,
+          placeholder: "密码",
+          reg: "^[^\u4e00-\u9fa5]{4,16}$",
+          regTitle: "请输入4-16位的数字、字母或特殊字符",
+        },
+        {
+          label: "性别",
+          type: "radio",
+          name: "sex",
+          required: false,
+          options: [
+            {
+              name: "无",
+              value: "",
+              checked: true,
+            },
+            {
+              name: "男",
+              value: "1",
+            },
+            {
+              name: "女",
+              value: "2",
+            },
+          ],
+          placeholder: "性别",
+        },
+        {
+          label: "出生日期",
+          type: "date",
+          name: "birthDay",
+          required: false,
+          placeholder: "出生日期",
+        },
+        {
+          label: "电话",
+          type: "text",
+          name: "phoneNum",
+          required: false,
+          placeholder: "电话",
+          reg: "^$|^[0-9]{7,15}$",
+          regTitle: "请输入有效电话号码",
+        },
+      ],
+      1,
+      (data, closeFun) => {
+        addUser(data);
+        closeFun();
+      }
+    );
+  }
+</script>
+
+<button
+  type="button"
+  class="btn btn-primary"
+  data-toggle="modal"
+  data-target="#myModal"
+>
+  打开弹窗
+</button>
+
+<div id="myModal" class="modal modal-vertical-center fade" role="dialog">
+  <div class="modal-dialog modal-dialog-vertical-center modal-slow-fade">
+    <div class="modal-content">
+      <!-- 弹窗内容 -->
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">
+          &times;
+        </button>
+        <h4 class="modal-title">弹窗标题</h4>
+      </div>
+      <div class="modal-body">
+        <p>弹窗内容...</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">
+          关闭
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<button
+  type="button"
+  class="btn btn-primary"
+  data-toggle="tooltip"
+  data-placement="top"
+  title="提示框内容"
+>
+  提示框
+</button>
+
+<script>
+  $(document).ready(function () {
+    $('[data-toggle="tooltip"]').tooltip();
+  });
+</script>
+
+<button id="confirmBtn" type="button" class="btn btn-primary">确认框</button>
+<script>
+  $("#confirmBtn").click(function () {
+    // $('#myModal').modal(options)
+    confirmBox("提示", "这是一个确认框", -1);
+  });
+</script>
+
+<!-- <div id="myAlert" class="alert alert-success" style="position: fixed; top: 0; left: 0; width: 200px; z-index: 9999;">
+    <strong>成功！</strong>结果是成功的。
+</div> -->
+<button id="your-button">a</button>
+<script>
+  $(() => {
+    $("#your-button").click(infoMessageFloat);
+  });
+</script>
