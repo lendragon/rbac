@@ -3,9 +3,9 @@ package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.service;
 import com.apexinfo.livecloud.server.plugins.product.mobile.extend.DemoService;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.UserMapper;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.UserRoleMapper;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.PageDTO;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.Role;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.User;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.UserDTO;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.log4j.Logger;
 
@@ -44,8 +44,8 @@ public class UserService {
      * @param id
      * @return
      */
-    public UserDTO query(Long pageNo, Long pageSize, String keyword, Long id) {
-        UserDTO userDTO = new UserDTO();
+    public PageDTO<User> query(Long pageNo, Long pageSize, String keyword, Long id) {
+        PageDTO<User> pageDTO = new PageDTO<>();
         List<User> users = null;
         int count = 0;
         if (id == null) {
@@ -57,16 +57,16 @@ public class UserService {
             }
             users =  userMapper.query(pageNo, pageSize, keyword);
             count = userMapper.count(keyword);
-            userDTO.setPageSize(Math.toIntExact(pageSize));
+            pageDTO.setPageSize(Math.toIntExact(pageSize));
         } else {
             users = userMapper.queryById(id);
             count = users.size();
-            userDTO.setPageSize(1);
+            pageDTO.setPageSize(count);
         }
-        userDTO.setRecords(users);
-        userDTO.setTotal(count);
+        pageDTO.setRecords(users);
+        pageDTO.setTotal(count);
 
-        return userDTO;
+        return pageDTO;
     }
 
 
@@ -106,7 +106,7 @@ public class UserService {
         UserRoleMapper userRoleMapper = new UserRoleMapper();
 
         // 查询该用户之前拥有的所有角色lastRoleId
-        List<Role> roles = RoleService.getInstance().query(null, null, null, userId);
+        List<Role> roles = RoleService.getInstance().query(null, null, null, userId, null).getRecords();
         Set<Long> lastRoleId = new HashSet<>();
         roles.forEach((role) -> {
             lastRoleId.add(role.getId());

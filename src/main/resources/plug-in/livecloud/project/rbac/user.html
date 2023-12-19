@@ -51,187 +51,385 @@
       <th class="col-xs-2">操作</th>
     </tr>
   </thead>
-  <tbody>
-    <tr>
-      <td><input type="checkbox" class="select-row" /></td>
-      <th scope="row">1</th>
-      <td>001</td>
-      <td>asdasfasfsa</td>
-      <td>@mdo</td>
-      <td>Mark</td>
-      <td>17705414033</td>
-      <td>@mdo</td>
-      <td>@mdo</td>
-      <td>
-        <button
-          class="btn btn-link btn-no-underline btn-text-size"
-          onclick="userDetail(1)"
-        >
-          查看详情
-        </button>
-        <button
-          class="btn btn-link btn-no-underline btn-text-size"
-          onclick="deleteUsers(1)"
-        >
-          删除
-        </button>
-      </td>
-      <script>
-        // 查看用户详情
-        function userDetail(userId) {
-          createFormBox(
-            "userDetail",
-            "用户详情",
-            [
-              {
-                label: "ID",
-                type: "text",
-                name: "id",
-                required: true,
-                disabled: true,
-                value: 1
-              },
-              {
-                label: "用户编号",
-                type: "text",
-                name: "no",
-                required: true,
-                placeholder: "用户编号",
-                reg: "^[0-9]{3}$",
-                regTitle: "请输入3位数字",
-              },
-              {
-                label: "用户名",
-                type: "text",
-                name: "name",
-                required: true,
-                placeholder: "用户名",
-                reg: "^.{2,12}$",
-                regTitle: "请输入2-12位的字符",
-              },
-              {
-                label: "密码",
-                type: "password",
-                name: "password",
-                required: true,
-                placeholder: "密码",
-                reg: "^[^\u4e00-\u9fa5]{4,16}$",
-                regTitle: "请输入4-16位的数字、字母或特殊字符",
-              },
-              {
-                label: "性别",
-                type: "radio",
-                name: "sex",
-                required: false,
-                options: [
-                  {
-                    name: "无",
-                    value: "",
-                    checked: true,
-                  },
-                  {
-                    name: "男",
-                    value: "1",
-                  },
-                  {
-                    name: "女",
-                    value: "2",
-                  },
-                ],
-                placeholder: "性别",
-              },
-              {
-                label: "出生日期",
-                type: "date",
-                name: "birthDay",
-                required: false,
-                placeholder: "出生日期",
-                value: formatDate(new Date(), false)
-              },
-              {
-                label: "电话",
-                type: "text",
-                name: "phoneNum",
-                required: false,
-                placeholder: "电话",
-                reg: "^$|^[0-9]{7,15}$",
-                regTitle: "请输入有效电话号码",
-              },
-              {
-                label: "创建时间",
-                type: "date",
-                name: "createTime",
-                required: false,
-                disabled: true
-              },
-              {
-                label: "修改时间",
-                type: "date",
-                name: "updateTime",
-                required: false,
-                disabled: true
-              },
-            ],
-            1,
-            (data, closeFun) => {
-              confirmBox("提示", "确定修改吗?", 0, true, true, () => {
-                console.log(data);
-                closeFun();
-              });
-            },
-            "修改"
-          );
-        }
-
-        // 删除用户
-        function deleteUsers(usersId) {
-          confirmBox("提示", "确定删除?", 1, true, true, () => {
-            let data = {};
-            if (typeof usersId === "number") {
-              data.id = [];
-              data.id.push(usersId);
-            } else {
-              data.id = usersId;
-            }
-
-            let a = $.param(data).replaceAll("%5B%5D", "");
-            console.log(a);
-            console.log(JSON.stringify(data));
-            successMessageFloat("删除成功");
-          });
-        }
-      </script>
-    </tr>
-    <tr>
-      <td><input type="checkbox" class="select-row" /></td>
-      <th scope="row">2</th>
-      <td>Jacob</td>
-      <td>Thorn</td>
-      <td>@fat</td>
-    </tr>
-    <tr>
-      <td><input type="checkbox" class="select-row" /></td>
-      <th scope="row">3</th>
-      <td>Larry</td>
-      <td>the Bird</td>
-      <td>@twitter</td>
-    </tr>
-    <tr>
-      <td><input type="checkbox" class="select-row" /></td>
-      <th scope="row">4</th>
-      <td>Larry</td>
-      <td>the Bird</td>
-      <td>@twitter</td>
-    </tr>
-    <tr>
-      <td><input type="checkbox" class="select-row" /></td>
-      <th scope="row">5</th>
-      <td>Larry</td>
-      <td>the Bird</td>
-      <td>@twitter</td>
-    </tr>
-  </tbody>
+  <tbody id="userData"></tbody>
 </table>
+<script>
+  $(() => {
+    let data = [
+      {
+        id: 1,
+        no: "001",
+        name: "admin",
+        password: "admin",
+        sex: 0,
+        birthDay: 1386806400000,
+        phoneNum: "11111111",
+        createTime: 1702396800000,
+        updateTime: 1702870249000,
+      },
+      {
+        id: 2,
+        no: "002",
+        name: "张三",
+        password: "1234",
+        sex: 0,
+        birthDay: null,
+        phoneNum: null,
+        createTime: 1702396800000,
+        updateTime: 1702396800000,
+      },
+      {
+        id: 3,
+        no: "003",
+        name: "李四",
+        password: "1234",
+        sex: 0,
+        birthDay: null,
+        phoneNum: null,
+        createTime: 1702396800000,
+        updateTime: 1702396800000,
+      },
+      {
+        id: 4,
+        no: "004",
+        name: "王五",
+        password: "1234",
+        sex: 0,
+        birthDay: null,
+        phoneNum: null,
+        createTime: 1702396800000,
+        updateTime: 1702396800000,
+      },
+      {
+        id: 28,
+        no: "006",
+        name: "赵六",
+        password: "7e236424ad2fb23dffc92427cec12fab",
+        sex: 0,
+        birthDay: null,
+        phoneNum: null,
+        createTime: 1702525756000,
+        updateTime: 1702525756000,
+      },
+      {
+        id: 39,
+        no: "123",
+        name: "123",
+        password: "7d8334f115758f93b3cb5e976e07b185",
+        sex: 0,
+        birthDay: null,
+        phoneNum: null,
+        createTime: 1702947227000,
+        updateTime: 1702947227000,
+      },
+      {
+        id: 38,
+        no: "123",
+        name: "123",
+        password: "7e236424ad2fb23dffc92427cec12fab",
+        sex: 0,
+        birthDay: null,
+        phoneNum: null,
+        createTime: 1702947222000,
+        updateTime: 1702947222000,
+      },
+      {
+        id: 37,
+        no: "123",
+        name: "123",
+        password: "7e236424ad2fb23dffc92427cec12fab",
+        sex: 0,
+        birthDay: null,
+        phoneNum: null,
+        createTime: 1702947216000,
+        updateTime: 1702947216000,
+      },
+      {
+        id: 36,
+        no: "123",
+        name: "123",
+        password: "7e236424ad2fb23dffc92427cec12fab",
+        sex: 0,
+        birthDay: null,
+        phoneNum: null,
+        createTime: 1702947212000,
+        updateTime: 1702947212000,
+      },
+      {
+        id: 40,
+        no: "123",
+        name: "1234",
+        password: "7d8334f115758f93b3cb5e976e07b185",
+        sex: 0,
+        birthDay: null,
+        phoneNum: null,
+        createTime: 1702947235000,
+        updateTime: 1702947235000,
+      },
+      {
+        id: 41,
+        no: "123",
+        name: "1234",
+        password: "7d8334f115758f93b3cb5e976e07b185",
+        sex: 0,
+        birthDay: null,
+        phoneNum: null,
+        createTime: 1702947240000,
+        updateTime: 1702947240000,
+      },
+      {
+        id: 42,
+        no: "123",
+        name: "12345",
+        password: "6f718d965862794bc0f150a74ee244ee",
+        sex: 0,
+        birthDay: null,
+        phoneNum: null,
+        createTime: 1702947248000,
+        updateTime: 1702947248000,
+      },
+      {
+        id: 43,
+        no: "123",
+        name: "1234",
+        password: "7d8334f115758f93b3cb5e976e07b185",
+        sex: 0,
+        birthDay: null,
+        phoneNum: null,
+        createTime: 1702947253000,
+        updateTime: 1702947253000,
+      },
+      {
+        id: 44,
+        no: "123",
+        name: "1234",
+        password: "7d8334f115758f93b3cb5e976e07b185",
+        sex: 0,
+        birthDay: null,
+        phoneNum: null,
+        createTime: 1702947257000,
+        updateTime: 1702947257000,
+      },
+      {
+        id: 45,
+        no: "123",
+        name: "12345",
+        password: "7d8334f115758f93b3cb5e976e07b185",
+        sex: 0,
+        birthDay: null,
+        phoneNum: null,
+        createTime: 1702947264000,
+        updateTime: 1702947264000,
+      },
+      {
+        id: 46,
+        no: "123",
+        name: "1234",
+        password: "7d8334f115758f93b3cb5e976e07b185",
+        sex: 0,
+        birthDay: null,
+        phoneNum: null,
+        createTime: 1702947269000,
+        updateTime: 1702947269000,
+      },
+      {
+        id: 47,
+        no: "123",
+        name: "1234",
+        password: "7d8334f115758f93b3cb5e976e07b185",
+        sex: 0,
+        birthDay: null,
+        phoneNum: null,
+        createTime: 1702947273000,
+        updateTime: 1702947273000,
+      },
+      {
+        id: 48,
+        no: "123",
+        name: "1234",
+        password: "7d8334f115758f93b3cb5e976e07b185",
+        sex: 0,
+        birthDay: null,
+        phoneNum: null,
+        createTime: 1702947286000,
+        updateTime: 1702947286000,
+      },
+      {
+        id: 49,
+        no: "123",
+        name: "1234",
+        password: "7d8334f115758f93b3cb5e976e07b185",
+        sex: 0,
+        birthDay: null,
+        phoneNum: null,
+        createTime: 1702947291000,
+        updateTime: 1702947291000,
+      },
+      {
+        id: 50,
+        no: "123",
+        name: "1234",
+        password: "7d8334f115758f93b3cb5e976e07b185",
+        sex: 0,
+        birthDay: null,
+        phoneNum: null,
+        createTime: 1702947295000,
+        updateTime: 1702947295000,
+      },
+    ];
+
+    createTable("#userData", changeJsonToArr(data));
+  });
+
+  function changeJsonToArr(data) {
+    let properties = [
+      "id",
+      "no",
+      "name",
+      "sex",
+      "birthDay",
+      "phoneNum",
+      "createTime",
+      "updateTime",
+
+    ];
+    return data.map((obj) => properties.map((prop) => {
+      if (prop === "birthDay") {
+        return isEmpty(obj[prop]) ? "null" : formatDate(obj[prop], false);
+      }
+      if (prop === "createTime" || prop === "updateTime") {
+        return formatDate(obj[prop], false);
+      }
+      return obj[prop];
+    }));
+  }
+
+  // 查看用户详情
+  function userDetail(userId) {
+    createFormBox(
+      "userDetail",
+      "用户详情",
+      [
+        {
+          label: "ID",
+          type: "text",
+          name: "id",
+          required: true,
+          disabled: true,
+          value: 1,
+        },
+        {
+          label: "用户编号",
+          type: "text",
+          name: "no",
+          required: true,
+          placeholder: "用户编号",
+          reg: "^[0-9]{3}$",
+          regTitle: "请输入3位数字",
+        },
+        {
+          label: "用户名",
+          type: "text",
+          name: "name",
+          required: true,
+          placeholder: "用户名",
+          reg: "^.{2,12}$",
+          regTitle: "请输入2-12位的字符",
+        },
+        {
+          label: "密码",
+          type: "password",
+          name: "password",
+          required: true,
+          placeholder: "密码",
+          reg: "^[^\u4e00-\u9fa5]{4,16}$",
+          regTitle: "请输入4-16位的数字、字母或特殊字符",
+        },
+        {
+          label: "性别",
+          type: "radio",
+          name: "sex",
+          required: false,
+          options: [
+            {
+              name: "无",
+              value: "",
+              checked: true,
+            },
+            {
+              name: "男",
+              value: "1",
+            },
+            {
+              name: "女",
+              value: "2",
+            },
+          ],
+          placeholder: "性别",
+        },
+        {
+          label: "出生日期",
+          type: "date",
+          name: "birthDay",
+          required: false,
+          placeholder: "出生日期",
+          value: formatDate(0, false),
+        },
+        {
+          label: "电话",
+          type: "text",
+          name: "phoneNum",
+          required: false,
+          placeholder: "电话",
+          reg: "^$|^[0-9]{7,15}$",
+          regTitle: "请输入有效电话号码",
+        },
+        {
+          label: "创建时间",
+          type: "date",
+          name: "createTime",
+          required: false,
+          disabled: true,
+          value: formatDate(new Date(1702396800000), false),
+        },
+        {
+          label: "修改时间",
+          type: "date",
+          name: "updateTime",
+          required: false,
+          disabled: true,
+        },
+      ],
+      1,
+      (data, closeFun) => {
+        confirmBox("提示", "确定修改吗?", 0, true, true, () => {
+          console.log(data);
+          closeFun();
+        });
+      },
+      "修改"
+    );
+  }
+
+  // 删除用户
+  function deleteUsers(usersId) {
+    confirmBox("提示", "确定删除?", 1, true, true, () => {
+      let data = {};
+      if (typeof usersId === "number") {
+        data.id = [];
+        data.id.push(usersId);
+      } else {
+        data.id = usersId;
+      }
+
+      let a = $.param(data).replaceAll("%5B%5D", "");
+      console.log(a);
+      console.log(JSON.stringify(data));
+      successMessageFloat("删除成功");
+    });
+  }
+</script>
+
 <script>
   /* 表格多选框 */
   // 全选/取消全选

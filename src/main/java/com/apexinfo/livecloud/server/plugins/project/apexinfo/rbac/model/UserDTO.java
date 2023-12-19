@@ -1,42 +1,29 @@
 package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model;
 
-import java.io.Serializable;
-import java.util.Date;
-import java.util.List;
-
 /**
  * @ClassName: UserDTO
- * @Description: 用户类, 对应用户表
+ * @Description: 用户DTO类, 对应用户信息和AES解密的iv
  * @Author linlongyue
- * @Date 2023/12/15
+ * @Date 2023/12/17
  * @Version 1.0
  */
 public class UserDTO {
-   private List<User> records;
-    private Integer total;
-    private Integer pageSize;
+    private User user;
+    private String iv;
 
-    public List<User> getRecords() {
-        return records;
+    public User getUser() {
+        return user;
     }
 
-    public void setRecords(List<User> records) {
-        this.records = records;
+    public void setUser(User user) {
+        this.user = user;
     }
 
-    public Integer getTotal() {
-        return total;
+    public String getIv() {
+        return iv;
     }
 
-    public void setTotal(Integer total) {
-        this.total = total;
-    }
-
-    public Integer getPageSize() {
-        return pageSize;
-    }
-
-    public void setPageSize(Integer pageSize) {
-        this.pageSize = pageSize;
+    public void setIv(String iv) {
+        this.iv = iv;
     }
 }

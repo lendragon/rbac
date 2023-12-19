@@ -4,8 +4,8 @@ import com.apexinfo.livecloud.server.common.exporter.Response;
 import com.apexinfo.livecloud.server.core.web.AbstractController;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant.RoleConstants;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.Role;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.PageDTO;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.service.RoleService;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.service.UserService;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,12 +36,12 @@ public class RoleController extends AbstractController {
     @RequestMapping(value = RoleConstants.ROUTE_ROLE,
             params = "action=query", method = RequestMethod.GET)
     @ResponseBody
-    public Response query(Long pageNo, Long pageSize, String keyword, Long userId,
+    public Response query(Long pageNo, Long pageSize, String keyword, Long userId, Long roleId,
                           HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
 
-        List<Role> roles = RoleService.getInstance().query(pageNo, pageSize, keyword, userId);
-        return Response.ofSuccess(roles);
+        PageDTO<Role> pageDTO = RoleService.getInstance().query(pageNo, pageSize, keyword, userId, roleId);
+        return Response.ofSuccess(pageDTO);
     }
 
     /**
@@ -124,7 +124,7 @@ public class RoleController extends AbstractController {
         setJsonResponse(request, response);
 
         int rows = RoleService.getInstance().delete(id);
-        if (rows == 1) {
+        if (rows > 0) {
             return Response.ofSuccess("删除成功", null);
         }
 

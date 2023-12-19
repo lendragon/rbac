@@ -26,7 +26,7 @@
       <th>用户编号</th>
       <th>用户名</th>
       <th>性别</th>
-      <th>生日</th>
+      <th>出生日期</th>
       <th>手机号</th>
       <th>创建时间</th>
       <th>修改时间</th>
@@ -52,6 +52,31 @@
     $("#batchDeleteBtn").click(batchDelete);
   });
 
+  // 将用户的数据转换成二维数组便于表格展示
+  function changeJsonToArr(data) {
+    let properties = [
+      "id",
+      "no",
+      "name",
+      "sex",
+      "birthDay",
+      "phoneNum",
+      "createTime",
+      "updateTime",
+    ];
+    return data.map((obj) =>
+      properties.map((prop) => {
+        if (prop === "birthDay") {
+          return isEmpty(obj[prop]) ? "null" : formatDate(obj[prop], false);
+        }
+        if (prop === "createTime" || prop === "updateTime") {
+          return formatDate(obj[prop], false);
+        }
+        return obj[prop];
+      })
+    );
+  }
+
   // 查询用户
   function queryUsers(pageNo, keyword) {
     let params = "action=query";
@@ -76,50 +101,12 @@
         let users = res.data.records;
         let total = res.data.total;
         let pageSize = res.data.pageSize;
+        // 创建表格
+        createTable("#userData", "user", changeJsonToArr(users));
+
         // 创建分页组件
         createPageBtn(Math.ceil(total / pageSize), true, "queryUsers");
 
-        let displayHtml = "";
-        users.forEach((user) => {
-          displayHtml +=
-            "<tr>" +
-            '<td><input type="checkbox" class="select-row" /></td>' +
-            '  <th scope="row">' +
-            user.id +
-            "</th>" +
-            "  <td>" +
-            user.no +
-            "</td>" +
-            "  <td>" +
-            user.name +
-            "</td>" +
-            "  <td>" +
-            (user.sex === 0 ? "无" : (user.sex === 1 ? "男" : "女")) +
-            "</td>" +
-            "  <td>" +
-            (user.birthDay === null ? null : formatDate(user.birthDay, false));
-             +
-            "</td>" +
-            "  <td>" +
-            user.phoneNum +
-            "</td>" +
-            "  <td>" +
-            formatDate(user.createTime, false) +
-            "</td>" +
-            "  <td>" +
-            formatDate(user.updateTime, false) +
-            "</td>" +
-            "<td>" +
-            '  <button class="btn btn-link btn-no-underline btn-text-size" onclick=userDetail(' +
-            user.id +
-            ")>查看详情</button>" +
-            '  <button class="btn btn-link btn-no-underline btn-text-size" onclick="deleteUsersBox(' +
-            user.id +
-            ')">删除</button>' +
-            "</td>" +
-            "</tr>";
-        });
-        $("#userData").html(displayHtml);
         // 给多选框绑定
         tableCheckBoxEvent();
       },
@@ -141,114 +128,115 @@
   }
 
   function userDetailFormBox(user) {
+    // 用户数据格式
+    let userFormData = [
+      {
+        label: "ID",
+        type: "text",
+        name: "id",
+        required: true,
+        disabled: true,
+        value: user.id,
+      },
+      {
+        label: "用户编号",
+        type: "text",
+        name: "no",
+        required: true,
+        placeholder: "用户编号",
+        reg: "^[0-9]{3}$",
+        regTitle: "请输入3位数字",
+        value: user.no,
+      },
+      {
+        label: "用户名",
+        type: "text",
+        name: "name",
+        required: true,
+        placeholder: "用户名",
+        reg: "^.{2,12}$",
+        regTitle: "请输入2-12位的字符",
+        value: user.name,
+      },
+      {
+        label: "密码",
+        type: "password",
+        name: "password",
+        required: true,
+        placeholder: "密码",
+        reg: "^[^\u4e00-\u9fa5]{4,16}$",
+        regTitle: "请输入4-16位的数字、字母或特殊字符",
+        value: user.password,
+      },
+      {
+        label: "性别",
+        type: "radio",
+        name: "sex",
+        required: false,
+        options: [
+          {
+            name: "无",
+            value: "",
+            checked: user.sex === 0,
+          },
+          {
+            name: "男",
+            value: "1",
+            checked: user.sex === 1,
+          },
+          {
+            name: "女",
+            value: "2",
+            checked: user.sex === 2,
+          },
+        ],
+        placeholder: "性别",
+      },
+      {
+        label: "出生日期",
+        type: "date",
+        name: "birthDay",
+        required: false,
+        placeholder: "出生日期",
+        value: isEmpty(user.birthDay) ? "" : formatDate(user.birthDay, false),
+      },
+      {
+        label: "电话",
+        type: "text",
+        name: "phoneNum",
+        required: false,
+        placeholder: "电话",
+        reg: "^$|^[0-9]{7,15}$",
+        regTitle: "请输入有效电话号码",
+        value: user.phoneNum == null ? "" : user.phoneNum,
+      },
+      {
+        label: "创建时间",
+        type: "date",
+        name: "createTime",
+        required: false,
+        disabled: true,
+        value: formatDate(user.createTime, false),
+      },
+      {
+        label: "修改时间",
+        type: "date",
+        name: "updateTime",
+        required: false,
+        disabled: true,
+        value: formatDate(user.updateTime, false),
+      },
+    ];
+
+    // 创建表单模态框
     createFormBox(
       "userDetail",
       "用户详情",
-      [
-        {
-          label: "ID",
-          type: "text",
-          name: "id",
-          required: true,
-          disabled: true,
-          value: user.id,
-        },
-        {
-          label: "用户编号",
-          type: "text",
-          name: "no",
-          required: true,
-          placeholder: "用户编号",
-          reg: "^[0-9]{3}$",
-          regTitle: "请输入3位数字",
-          value: user.no,
-        },
-        {
-          label: "用户名",
-          type: "text",
-          name: "name",
-          required: true,
-          placeholder: "用户名",
-          reg: "^.{2,12}$",
-          regTitle: "请输入2-12位的字符",
-          value: user.name,
-        },
-        {
-          label: "密码",
-          type: "password",
-          name: "password",
-          required: true,
-          placeholder: "密码",
-          reg: "^[^\u4e00-\u9fa5]{4,16}$",
-          regTitle: "请输入4-16位的数字、字母或特殊字符",
-          value: user.password,
-        },
-        {
-          label: "性别",
-          type: "radio",
-          name: "sex",
-          required: false,
-          options: [
-            {
-              name: "无",
-              value: "",
-              checked: user.sex === 0,
-            },
-            {
-              name: "男",
-              value: "1",
-              checked: user.sex === 1,
-            },
-            {
-              name: "女",
-              value: "2",
-              checked: user.sex === 2,
-            },
-          ],
-          placeholder: "性别",
-        },
-        {
-          label: "出生日期",
-          type: "date",
-          name: "birthDay",
-          required: false,
-          placeholder: "出生日期",
-          value:
-            (user.birthDay == null
-              ? ""
-              : formatDate(new Date(user.birthDay), false)),
-        },
-        {
-          label: "电话",
-          type: "text",
-          name: "phoneNum",
-          required: false,
-          placeholder: "电话",
-          reg: "^$|^[0-9]{7,15}$",
-          regTitle: "请输入有效电话号码",
-          value: user.phoneNum == null ? "" : user.phoneNum,
-        },
-        {
-          label: "创建时间",
-          type: "date",
-          name: "createTime",
-          required: false,
-          disabled: true,
-          value: formatDate(new Date(user.birthDay), false),
-        },
-        {
-          label: "修改时间",
-          type: "date",
-          name: "updateTime",
-          required: false,
-          disabled: true,
-          value: formatDate(new Date(user.birthDay), false),
-        },
-      ],
+      userFormData,
       1,
       (data, closeFun) => {
         confirmBox("提示", "确定修改吗?", 0, true, true, () => {
-          data.id = user.id;
+          // data.id = user.id;
           updateUser(data);
           closeFun();
         });
@@ -295,12 +283,14 @@
 
   // 批量删除
   function batchDelete() {
-    let checked = $(".select-row:checked");
-    let usersId = [];
-    checked.each(function () {
-      usersId.push(parseInt($(this).parent().next().text()));
+    confirmBox("提示", "确定删除?", -1, true, true, () => {
+      let checked = $(".select-row:checked");
+      let usersId = [];
+      checked.each(function () {
+        usersId.push(parseInt($(this).parent().next().text()));
+      });
+      deleteUsers(usersId);
     });
-    deleteUsers(usersId);
   }
 
   // 删除用户
@@ -353,81 +343,78 @@
 
   // 新增用户的表单
   function addUserFormBox() {
-    createFormBox(
-      "addUser",
-      "新增用户",
-      [
-        {
-          label: "用户编号",
-          type: "text",
-          name: "no",
-          required: true,
-          placeholder: "用户编号",
-          reg: "^[0-9]{3}$",
-          regTitle: "请输入3位数字",
-        },
-        {
-          label: "用户名",
-          type: "text",
-          name: "name",
-          required: true,
-          placeholder: "用户名",
-          reg: "^.{2,12}$",
-          regTitle: "请输入2-12位的字符",
-        },
-        {
-          label: "密码",
-          type: "password",
-          name: "password",
-          required: true,
-          placeholder: "密码",
-          reg: "^[^\u4e00-\u9fa5]{4,16}$",
-          regTitle: "请输入4-16位的数字、字母或特殊字符",
-        },
-        {
-          label: "性别",
-          type: "radio",
-          name: "sex",
-          required: false,
-          options: [
-            {
-              name: "无",
-              value: "0",
-              checked: true,
-            },
-            {
-              name: "男",
-              value: "1",
-            },
-            {
-              name: "女",
-              value: "2",
-            },
-          ],
-          placeholder: "性别",
-        },
-        {
-          label: "出生日期",
-          type: "date",
-          name: "birthDay",
-          required: false,
-          placeholder: "出生日期",
-        },
-        {
-          label: "电话",
-          type: "text",
-          name: "phoneNum",
-          required: false,
-          placeholder: "电话",
-          reg: "^$|^[0-9]{7,15}$",
-          regTitle: "请输入有效电话号码",
-        },
-      ],
-      1,
-      (data, closeFun) => {
-        addUser(data);
-        closeFun();
-      }
-    );
+    let userFormData = [
+      {
+        label: "用户编号",
+        type: "text",
+        name: "no",
+        required: true,
+        placeholder: "用户编号",
+        reg: "^[0-9]{3}$",
+        regTitle: "请输入3位数字",
+      },
+      {
+        label: "用户名",
+        type: "text",
+        name: "name",
+        required: true,
+        placeholder: "用户名",
+        reg: "^.{2,12}$",
+        regTitle: "请输入2-12位的字符",
+      },
+      {
+        label: "密码",
+        type: "password",
+        name: "password",
+        required: true,
+        placeholder: "密码",
+        reg: "^[^\u4e00-\u9fa5]{4,16}$",
+        regTitle: "请输入4-16位的数字、字母或特殊字符",
+      },
+      {
+        label: "性别",
+        type: "radio",
+        name: "sex",
+        required: false,
+        options: [
+          {
+            name: "无",
+            value: "0",
+            checked: true,
+          },
+          {
+            name: "男",
+            value: "1",
+          },
+          {
+            name: "女",
+            value: "2",
+          },
+        ],
+        placeholder: "性别",
+      },
+      {
+        label: "出生日期",
+        type: "date",
+        name: "birthDay",
+        required: false,
+        placeholder: "出生日期",
+      },
+      {
+        label: "电话",
+        type: "text",
+        name: "phoneNum",
+        required: false,
+        placeholder: "电话",
+        reg: "^$|^[0-9]{7,15}$",
+        regTitle: "请输入有效电话号码",
+      },
+    ];
+
+    // 创建表单模态框
+    createFormBox("addUser", "新增用户", userFormData, 1, (data, closeFun) => {
+      addUser(data);
+      closeFun();
+    });
   }
 </script>

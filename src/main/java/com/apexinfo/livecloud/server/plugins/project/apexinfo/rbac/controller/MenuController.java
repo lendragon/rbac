@@ -26,8 +26,9 @@ import java.util.List;
 @Controller
 public class MenuController extends AbstractController {
     /**
-     * 查询菜单树
+     * 查询菜单
      * @param roleId
+     * @param menuId
      * @param request
      * @param response
      * @return
@@ -35,10 +36,11 @@ public class MenuController extends AbstractController {
     @RequestMapping(value = MenuConstants.ROUTE_MENU,
             params = "action=query", method = RequestMethod.GET)
     @ResponseBody
-    public Response query(Long roleId, HttpServletRequest request, HttpServletResponse response) {
+    public Response query(Long roleId, Long menuId,
+                          HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
 
-        List<MenuVO> menusTree = MenuService.getInstance().queryToTree(roleId);
+        List<MenuVO> menusTree = MenuService.getInstance().queryToTree(roleId, menuId);
         return Response.ofSuccess(menusTree);
     }
 
@@ -96,7 +98,7 @@ public class MenuController extends AbstractController {
         setJsonResponse(request, response);
 
         int rows = MenuService.getInstance().delete(id);
-        if (rows == 1) {
+        if (rows > 0) {
             return Response.ofSuccess("删除成功", null);
         }
         return Response.ofFail("删除失败");

@@ -38,16 +38,23 @@ public class MenuService {
      * @param roleId
      * @return
      */
-    public List<MenuVO> queryToTree(Long roleId) {
+    public List<MenuVO> queryToTree(Long roleId, Long menuId) {
         List<MenuVO> menusTree = new ArrayList<>();
-
-        List<Menu> menuList = query(roleId);
-        for (Menu menu : menuList) {
-            // 根节点的 level 为 1
-            if (menu.getLevel() == 1) {
-                MenuVO menuVO = buildMenuTree(menu, menuList);
-                menusTree.add(menuVO);
+        List<Menu> menuList = null;
+        if (menuId == null) {
+            menuList = query(roleId);
+            for (Menu menu : menuList) {
+                // 根节点的 level 为 1
+                if (menu.getLevel() == 1) {
+                    MenuVO menuVO = buildMenuTree(menu, menuList);
+                    menusTree.add(menuVO);
+                }
             }
+        } else {
+            menuList = menuMapper.queryById(menuId);
+            MenuVO menuVO = new MenuVO();
+            menuVO.setMenu(menuList.get(0));
+            menusTree.add(menuVO);
         }
 
         // 构建菜单树

@@ -6,6 +6,7 @@ import com.apexinfo.livecloud.server.core.GeneralMapper;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.common.SQLCommon;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant.MenuConstants;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.Menu;
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.SQLException;
@@ -32,6 +33,39 @@ public class MenuMapper extends GeneralMapper {
                     " FUpdateTime, FDescription from CT_Rbac_Menu ";
 
             ApexRowSet rs = ApexDao.getRowSet(getDataSource(), sql);
+            while (rs.next()) {
+                Menu menu = new Menu();
+                menu.setId(rs.getLong("ID"));
+                menu.setName(rs.getString("FName"));
+                menu.setOrder(rs.getLong("FOrder"));
+                menu.setLevel(rs.getLong("FLevel"));
+                menu.setParentId(rs.getLong("FParentId"));
+                menu.setUrl(rs.getString("FUrl"));
+                menu.setCreateTime(rs.getDate("FCreateTime"));
+                menu.setUpdateTime(rs.getDate("FUpdateTime"));
+                menu.setDescription(rs.getString("FDescription"));
+                menus.add(menu);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return menus;
+    }
+
+    /**
+     * 根据菜单id查询菜单树
+     * @return
+     */
+    public List<Menu> queryById(long menuId) {
+        List<Menu> menus = new ArrayList<>();
+        try {
+            String sql = "select ID, FName, FOrder, FLevel, FParentId, FUrl, FCreateTime," +
+                    " FUpdateTime, FDescription from CT_Rbac_Menu where ID = ?";
+
+            ApexDao dao = new ApexDao();
+            dao.prepareStatement(sql);
+            dao.setLong(1, menuId);
+            ApexRowSet rs = dao.getRowSet(getDataSource());
             while (rs.next()) {
                 Menu menu = new Menu();
                 menu.setId(rs.getLong("ID"));

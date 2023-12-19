@@ -5,6 +5,7 @@ import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.RoleMa
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.RoleMenuMapper;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.Menu;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.Role;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.PageDTO;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.log4j.Logger;
 
@@ -44,17 +45,33 @@ public class RoleService {
      * @param userId
      * @return
      */
-    public List<Role> query(Long pageNo, Long pageSize, String keyword, Long userId) {
-        if (userId == null) {
+    public PageDTO<Role> query(Long pageNo, Long pageSize, String keyword, Long userId, Long roleId) {
+        PageDTO<Role> pageDTO = new PageDTO<>();
+        List<Role> roles = null;
+        int count = 0;
+        if (roleId != null) {
+            roles =  roleMapper.queryById(roleId);
+            count = roles.size();
+            pageDTO.setPageSize(count);
+        } else if (userId == null) {
             if (pageNo == null) {
                 pageNo = 1L;
             }
             if (pageSize == null) {
                 pageSize = 20L;
             }
-            return roleMapper.query(pageNo, pageSize, keyword);
+            roles =  roleMapper.query(pageNo, pageSize, keyword);
+            count = roleMapper.count(keyword);
+            pageDTO.setPageSize(Math.toIntExact(pageSize));
+        } else {
+            roles =  roleMapper.queryByUserId(userId);
+            count = roles.size();
+            pageDTO.setPageSize(count);
         }
-        return roleMapper.queryByUserId(userId);
+        pageDTO.setRecords(roles);
+        pageDTO.setTotal(count);
+
+        return pageDTO;
     }
 
     /**

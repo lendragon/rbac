@@ -182,8 +182,8 @@ function createPageBtn(total, disLastNext, queryFunName) {
   }
   for (let i = 0; i < total; i++) {
     btnHtml += `
-      <li class="pageBtn" onclick="togglePageBtn(event, $(this), ${queryFunName})">
-        <a href="#">${i + 1} </a>
+      <li class="pageBtn" onclick="togglePageBtn(event, ${i + 1}, ${queryFunName})">
+        <a href="#">${i + 1}</a>
       </li>`;
   }
   if (disLastNext) {
@@ -202,14 +202,45 @@ function createPageBtn(total, disLastNext, queryFunName) {
 }
 
 // 分页组件点击切换
-function togglePageBtn(event, object, queryFun) {
-  let activeObject = $(".pageBtn.active");
-  if (object['0'] === activeObject['0']) {
+// function togglePageBtn(event, object, queryFun) {
+//   let activeObject = $(".pageBtn.active");
+//   if (object['0'] === activeObject['0']) {
+//     return;
+//   }
+//   activeObject.removeClass("active");
+//   object.addClass("active");
+//   pageNo = object.text();
+//   if (typeof (queryFun) === "function") {
+//     queryFun(pageNo, keyword);
+//   }
+// }
+
+// // 下一个按钮点击事件
+// function nextTogglePageBtn() {
+//   if (pageNo >= $(".pageBtn").length) {
+//     return;
+//   }
+//   togglePageBtn(event, $(".pageBtn.active + .pageBtn"));
+// }
+
+// // 上一个按钮点击事件
+// function lastTogglePageBtn() {
+//   if (pageNo <= 1) {
+//     return;
+//   }
+//   togglePageBtn(event, $($(".pageBtn")[pageNo - 2]));
+// }
+
+function togglePageBtn(event, pageNoTmp, queryFun) {
+  let activeObject = $(".pageBtn.active")[0];
+  let object = $(".pageBtn")[pageNoTmp - 1];
+  if (object === activeObject) {
     return;
   }
-  activeObject.removeClass("active");
-  object.addClass("active");
-  pageNo = object.text();
+
+  activeObject.classList.remove("active");
+  object.classList.add("active");
+  pageNo = pageNoTmp;
   if (typeof (queryFun) === "function") {
     queryFun(pageNo, keyword);
   }
@@ -220,7 +251,7 @@ function nextTogglePageBtn() {
   if (pageNo >= $(".pageBtn").length) {
     return;
   }
-  togglePageBtn(event, $(".pageBtn.active + .pageBtn"));
+  togglePageBtn(event, pageNo + 1);
 }
 
 // 上一个按钮点击事件
@@ -228,7 +259,7 @@ function lastTogglePageBtn() {
   if (pageNo <= 1) {
     return;
   }
-  togglePageBtn(event, $($(".pageBtn")[pageNo - 2]));
+  togglePageBtn(event, pageNo - 1);
 }
 
 
@@ -282,7 +313,11 @@ function createFormBox(formId, title, formData, size, submitFun, btnName) {
     }
 
     // 提交表单
+    // 将所有的disabled的input全部开启
+    let disabledInput = $('input[disabled]');
+    disabledInput.removeAttr('disabled');
     let formData = $(this).serializeArray()
+    disabledInput.prop('disabled', 'disabled');
     let jsonData = {};
     $.each(formData, function () {
       jsonData[this.name] = this.value === "" ? null : this.value;
@@ -307,13 +342,14 @@ function createFormBox(formId, title, formData, size, submitFun, btnName) {
  *    label: 标签名字
  *    placeholder: 显示的提示文字
  *    name: 名字, 传递给后端的参数
- *    type: 类型(text, password, radio, checkbox, date)
+ *    type: 类型(text, password, radio, checkbox, date, textarea)
  *    disabled: boolean, 是否禁用
  *    value: 默认值
  *    options: 选项名和选项内容(当type为radio和checkbox时生效)
  *      name: 选项名
  *      value: 选项值
  *      checked: 是否默认选中
+ *    rows: 当type为textarea时生效, 支持多少行
  *    required: boolean, 是否必填
  *    reg: 正则表达式验证
  *    regTitle: 正则表达式没通过时报的错误
@@ -325,7 +361,7 @@ function createFormHtml(formId, formArr, btnName = "确定") {
       <div class="form-group">
         <label for="${elem.name}Input" class="col-sm-2 control-label">${elem.required ? '<span class="red">*</span>' : ""}${elem.label}</label>
       <div class="col-sm-9">`;
-    if (elem.type === "text" || elem.type === "password") {
+    if (elem.type === "text" || elem.type === "password" || elem.type === "number") {
       formHtml += `
         <input id="${elem.name}Input" name="${elem.name}" type="${elem.type}" class="form-control"
          ${elem.required ? "isRequired" : ""}
@@ -341,12 +377,20 @@ function createFormHtml(formId, formArr, btnName = "确定") {
             <input type="${elem.type}" name="${elem.name}" value="" ${option.checked ? "checked" : ""}> ${option.name}
           </label>`
       })
+    } else if (elem.type === "textarea") {
+      formHtml += `
+        <textarea id="${elem.name}Input" name="${elem.name}" class="form-control" rows="${elem.rows}"
+         ${elem.required ? "isRequired" : ""}
+         ${isEmpty(elem.reg) ? "" : 'regPattern="' + elem.reg + '"'} 
+         ${isEmpty(elem.regTitle) ? "" : 'regTitle="' + elem.regTitle + '"'} 
+         placeholder="${isEmpty(elem.placeholder) ? "" : elem.placeholder}" 
+         ${elem.disabled ? "disabled" : ""} >${isEmpty(elem.value) ? "" : elem.value}</textarea>`
     } else { // date
       formHtml += `
         <input name="${elem.name}" type="text" class="form-control date-choose-input"  ${elem.required ? "required" : ""} 
         placeholder="${isEmpty(elem.placeholder) ? "" : elem.placeholder}"
         ${elem.disabled ? "disabled" : ""} 
-        value="${isEmpty(elem.value) ? "" : elem.value}"></input>`
+        value="${isEmpty(elem.value) ? "" : elem.value}">`
     }
 
     formHtml += `
@@ -375,7 +419,107 @@ function dateChooseEvent(elemCss) {
     format: 'yyyy-mm-dd', // 日期格式
     autoclose: true, // 选择后自动关闭
     minView: "month", //设置选择时 只显示到月份 ----day， year --不设置默认带时间 秒   日历的显示时间
-    maxDate: new Date(),
+    maxDate: new Date(), // 最多只能选到今天
     todayHighlight: true // 当天高亮显示
   });
+}
+
+
+/* ===== 自定义菜单树 ===== */
+function createTree(id, data) {
+  let treeData = convertToTreeData(data);
+  $(`#${id}`).treeview({
+    data: treeData,
+    // backColor: "green",    节点初始背景色
+    // selectedBackColor: "green"  // 节点被选中时的背景色
+    // selectedColor: "green"  // 节点被选中时的字体颜色
+    // onNodeSelected: function (event, node) {
+    //   console.log(node);
+    // },
+    // onNodeUnselected: function (event, node) {
+    //   console.log(node);
+    // }
+
+    // $(".btn-tree").click((event) => {
+    //   console.log(1);
+    //   event.stopPropagation();  // 阻止事件冒泡
+    // })
+    showCheckbox: true,
+    showTags: true,
+    // searchResultColor: "#000",
+    // searchResultBackColor: "#000",
+    // multiSelect : true
+  });
+}
+
+function convertToTreeData(data) {
+  return data.map((item) => ({
+    text: item.menu.name + `<span class="label label-info margin-5">${item.children.length}</span>` + treeBtnHtml(item.menu) + `<input type="hidden" value="${item.menu.id}">`,
+    nodes: item.children.length >= 1 ? convertToTreeData(item.children) : null,
+  }));
+}
+
+function treeBtnHtml(elem) {
+  let treeBtn = `
+    <div class="btn-float-right">
+      <button
+        class="btn btn-info btn-sm btn-tree"
+        onclick="event.stopPropagation(); menuDetail(${elem.id});"
+      >
+        <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
+      </button>
+
+      <button
+        class="btn btn-primary btn-sm btn-tree"
+        onclick="event.stopPropagation(); addChild(${elem.level}, ${elem.id});"
+      >
+        <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+      </button>
+      <button
+        class="btn btn-danger btn-sm btn-tree"
+        onclick="event.stopPropagation(); deleteMenusBox(${elem.id});"
+      >
+        <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
+      </button>
+    </div>`;
+  return treeBtn;
+}
+
+/* ===== 自定义表格 ===== */
+function createTable(selector, menuName, data, hasBtn = true, btnDataIndex = 0) {
+  let displayHtml = "";
+  data.forEach((items) => {
+    // let keys = Object.keys(item);
+    displayHtml +=
+      `<tr>
+        <td><input type="checkbox" class="select-row" /></td>
+        <th scope="row">${items[0]}</th>`;
+    for (let i = 1; i < items.length; i++) {
+      displayHtml += `<td>${items[i]}</td>`;
+    }
+    if (hasBtn) {
+      displayHtml +=
+        `<td>
+          <button
+            class="btn btn-link btn-no-underline btn-text-size"
+            onclick="${menuName}Detail(${items[btnDataIndex]})"
+          >
+            查看详情
+          </button>
+          <button
+            class="btn btn-link btn-no-underline btn-text-size"
+            onclick="delete${capitalizeFirstLetter(menuName)}sBox(${items[btnDataIndex]})"
+          >
+            删除
+          </button>
+        </td>
+      </tr>`
+    }
+
+  });
+  $(selector).html(displayHtml);
+}
+
+function capitalizeFirstLetter(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
 }

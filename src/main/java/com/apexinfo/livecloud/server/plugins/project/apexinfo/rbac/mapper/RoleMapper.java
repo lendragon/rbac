@@ -2,13 +2,11 @@ package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper;
 
 import com.apex.util.ApexDao;
 import com.apex.util.ApexRowSet;
-import com.apexinfo.livecloud.server.common.SQLTool;
 import com.apexinfo.livecloud.server.core.GeneralMapper;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.common.SQLCommon;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant.RoleConstants;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.Role;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.User;
-import org.checkerframework.checker.units.qual.A;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.SQLException;
@@ -25,6 +23,7 @@ import java.util.List;
 public class RoleMapper extends GeneralMapper {
     /**
      * 分页模糊查询角色
+     *
      * @param pageNo
      * @param pageSize
      * @param keyword
@@ -37,7 +36,7 @@ public class RoleMapper extends GeneralMapper {
                     "FDescription from CT_Rbac_Role where 1 = 1 ");
             // 拼接模糊查询SQL
             if (keyword != null && !keyword.isEmpty()) {
-                SQLCommon.likeContact(sql, keyword, "FName","FDescription");
+                SQLCommon.likeContact(sql, keyword, "FName", "FDescription");
             }
             // 分页查询
             ApexRowSet rs = ApexDao.getRowSet(getDataSource(), sql.toString(),
@@ -59,6 +58,7 @@ public class RoleMapper extends GeneralMapper {
 
     /**
      * 根据用户id查询角色
+     *
      * @param userId
      * @return
      */
@@ -66,8 +66,8 @@ public class RoleMapper extends GeneralMapper {
         List<Role> roles = new ArrayList<>();
         try {
             String sql = "select ID, FName, FCreateTime, FUpdateTime, FDescription " +
-                            "from CT_Rbac_Role where ID in " +
-                            "(select FRoleId from CT_Rbac_User_Role where FUserId = ?)";
+                    "from CT_Rbac_Role where ID in " +
+                    "(select FRoleId from CT_Rbac_User_Role where FUserId = ?)";
 
             ApexDao dao = new ApexDao();
             dao.prepareStatement(sql);
@@ -89,7 +89,38 @@ public class RoleMapper extends GeneralMapper {
     }
 
     /**
+     * 根据角色id查询角色
+     *
+     * @return
+     */
+    public List<Role> queryById(Long id) {
+        List<Role> roles = new ArrayList<>();
+        try {
+            String sql = "select ID, FName, FDescription, FCreateTime, FUpdateTime " +
+                    "from CT_Rbac_Role where ID = ? ";
+            ApexDao dao = new ApexDao();
+            dao.prepareStatement(sql);
+            dao.setLong(1, id);
+            ApexRowSet rs = dao.getRowSet(getDataSource());
+
+            while (rs != null && rs.next()) {
+                Role role = new Role();
+                role.setId(rs.getLong("ID"));
+                role.setName(rs.getString("FName"));
+                role.setDescription(rs.getString("FDescription"));
+                role.setCreateTime(rs.getDate("FCreateTime"));
+                role.setUpdateTime(rs.getDate("FUpdateTime"));
+                roles.add(role);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return roles;
+    }
+
+    /**
      * 新增角色
+     *
      * @param role
      * @return
      */
@@ -119,6 +150,7 @@ public class RoleMapper extends GeneralMapper {
 
     /**
      * 修改角色信息
+     *
      * @param role
      * @return
      */
@@ -144,6 +176,7 @@ public class RoleMapper extends GeneralMapper {
 
     /**
      * 删除角色
+     *
      * @param id
      * @return
      */
@@ -162,4 +195,28 @@ public class RoleMapper extends GeneralMapper {
 
         return rows;
     }
+
+    /**
+     * 获取数据库中数据的数量
+     *
+     * @return
+     */
+    public int count(String keyword) {
+        int count = 0;
+        try {
+            StringBuffer sql = new StringBuffer("select count(*) from CT_Rbac_Role where 1 = 1 ");
+            if (keyword != null && !keyword.isEmpty()) {
+                SQLCommon.likeContact(sql, keyword, "FName", "FDescription");
+            }
+            ApexRowSet rs = ApexDao.getRowSet(getDataSource(), sql.toString());
+            if (rs.next()) {
+                count = rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return count;
+    }
+
+
 }

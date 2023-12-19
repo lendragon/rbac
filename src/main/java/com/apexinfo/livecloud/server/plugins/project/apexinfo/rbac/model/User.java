@@ -13,25 +13,15 @@ import java.util.Date;
  * @Date 2023/12/13
  * @Version 1.0
  */
-//@Table("CT_Rbac_User")
-public class User implements Serializable {
-//    @Column("ID")
+public class User {
     private Long id;
-//    @Column("FNo")
     private String no;
-//    @Column("FName")
     private String name;
-//    @Column("FPassword")
     private String password;
-//    @Column("FSex")
     private Long sex;
-//    @Column("FBirthDay")
     private Date birthDay;
-//    @Column("FPhoneNum")
     private String phoneNum;
-//    @Column("FCreateTime")
     private Date createTime;
-//    @Column("FUpdateTime")
     private Date updateTime;
 
     public User() {
@@ -121,18 +111,4 @@ public class User implements Serializable {
         this.updateTime = updateTime;
     }
 
-    @Override
-    public String toString() {
-        return "User{" +
-                "id=" + id +
-                ", no='" + no + '\'' +
-                ", name='" + name + '\'' +
-                ", password='" + password + '\'' +
-                ", sex=" + sex +
-                ", birthDay=" + birthDay +
-                ", phoneNum='" + phoneNum + '\'' +
-                ", createTime=" + createTime +
-                ", updateTime=" + updateTime +
-                '}';
-    }
 }

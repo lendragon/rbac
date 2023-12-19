@@ -1,13 +1,11 @@
 package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.controller;
 
-import com.apexinfo.livecloud.server.common.exception.PageException;
 import com.apexinfo.livecloud.server.common.exporter.Response;
 import com.apexinfo.livecloud.server.core.web.AbstractController;
 import com.apexinfo.livecloud.server.plugins.product.sql.query.util.MD5Tools;
-import com.apexinfo.livecloud.server.plugins.product.liveid.client.util.AESUtil;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant.UserConstants;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.PageDTO;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.User;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.UserAddDTO;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.UserDTO;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.service.UserService;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.util.AesDecryptor;
@@ -16,9 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -30,22 +26,6 @@ import java.util.Set;
  */
 @Controller
 public class UserController extends AbstractController {
-
-    /**
-     * 验证前端发送的密码的合法性
-     *
-     * @param password
-     * @param sign
-     * @return
-     */
-    private boolean validatePassword(String password, String sign) throws Exception {
-        String decrypt = AesDecryptor.aesDecrypt(sign, UserConstants.AES_KEY, UserConstants.AES_IV);
-        if (!decrypt.equals(password)) {
-            return false;
-        }
-        return true;
-    }
-
     /**
      * 查询用户
      *
@@ -64,14 +44,14 @@ public class UserController extends AbstractController {
                           HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
 
-        UserDTO userDTO = UserService.getInstance().query(pageNo, pageSize, keyword, id);
-        return Response.ofSuccess(userDTO);
+        PageDTO<User> pageDTO = UserService.getInstance().query(pageNo, pageSize, keyword, id);
+        return Response.ofSuccess(pageDTO);
     }
 
     /**
      * 新增用户
      *
-     * @param userAddDTO
+     * @param userDTO
      * @param request
      * @param response
      * @return
@@ -79,11 +59,11 @@ public class UserController extends AbstractController {
     @RequestMapping(value = UserConstants.ROUTE_USER,
             params = "action=add", method = RequestMethod.POST)
     @ResponseBody
-    public Response add(@RequestBody UserAddDTO userAddDTO,
+    public Response add(@RequestBody UserDTO userDTO,
                         HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
-        String iv = userAddDTO.getIv();
-        User user = userAddDTO.getUser();
+        String iv = userDTO.getIv();
+        User user = userDTO.getUser();
 
         String password = null;
         // 验证合法性
@@ -106,7 +86,7 @@ public class UserController extends AbstractController {
     /**
      * 修改用户
      *
-     * @param userAddDTO
+     * @param userDTO
      * @param request
      * @param response
      * @return
@@ -114,12 +94,12 @@ public class UserController extends AbstractController {
     @RequestMapping(value = UserConstants.ROUTE_USER,
             params = "action=update", method = RequestMethod.POST)
     @ResponseBody
-    public Response update(@RequestBody UserAddDTO userAddDTO,
+    public Response update(@RequestBody UserDTO userDTO,
                            HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
 
-        String iv = userAddDTO.getIv();
-        User user = userAddDTO.getUser();
+        String iv = userDTO.getIv();
+        User user = userDTO.getUser();
 
         String password = null;
         // 验证合法性
@@ -179,7 +159,7 @@ public class UserController extends AbstractController {
         setJsonResponse(request, response);
 
         int rows = UserService.getInstance().delete(id);
-        if (rows == 1) {
+        if (rows > 0) {
             return Response.ofSuccess("删除成功", null);
         }
         return Response.ofFail("删除失败");

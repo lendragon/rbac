@@ -89,7 +89,7 @@ function changeURLStatic(name, value) {
 }
 
 function isEmpty(v) {
-  return typeof (v) === "undefined" || v === null || v === '';
+  return typeof (v) === "undefined" || v === null || v === "";
 }
 
 

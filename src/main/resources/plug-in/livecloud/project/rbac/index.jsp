@@ -55,6 +55,12 @@
         "${pageContext.request.contextPath}/livecloud/project/user.pagex";
       const ROUTE_USER_ROLE =
         "${pageContext.request.contextPath}/livecloud/project/userRole.pagex";
+      const ROUTE_ROLE =
+        "${pageContext.request.contextPath}/livecloud/project/role.pagex";
+      const ROUTE_ROLE_MENU =
+        "${pageContext.request.contextPath}/livecloud/project/roleMenu.pagex";
+      const ROUTE_MENU =
+        "${pageContext.request.contextPath}/livecloud/project/menu.pagex";
       $(() => {
         // 根据地址栏的参数page, 值为user、role、menu来展示不同的页面， 没有填写时自动加上user
         let page = getURLParam("page");

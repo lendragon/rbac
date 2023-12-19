@@ -1,42 +1,263 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <title>test</title>
-    <link rel="stylesheet" href="css/bootstrap.min.css" />
+<link rel="stylesheet" href="css/bootstrap-treeview.min.css" />
+<script src="js/bootstrap-treeview.min.js"></script>
+<!-- <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css"> -->
+<!-- <div class="row"> -->
+<button id="addUserBtn" class="btn btn-primary">新增</button>
+<button
+  id="batchDeleteBtn"
+  class="btn btn-danger"
+  disabled
+  onclick="batchDelete()"
+>
+  批量删除
+</button>
+<script>
+  function batchDelete() {
+    let checked = $(".select-row:checked");
+    let usersId = [];
+    checked.each(function () {
+      usersId.push(parseInt($(this).parent().next().text()));
+    });
+    deleteUsers(usersId);
+  }
+</script>
 
-    <script src="js/jquery-3.3.1.min.js"></script>
-    <script src="js/bootstrap.min.js"></script>
-  </head>
-  <body>
-    <!-- 头部 -->
-    <header>
-      <div class="page-header">
-        <h2>系统管理 <small>/用户管理</small></h2>
-      </div>
-    </header>
+<script>
+  // 给按钮监听点击事件
+  $("#addUserBtn").click(addUserFormBox);
 
-    <!-- 导航栏 -->
-    <nav>
-      <ul class="nav nav-tabs" role="tablist">
-        <li role="presentation" class="active">
-          <a href="#user" aria-controls="user" role="tab" data-toggle="tab"
-            >用户管理</a
-          >
-        </li>
-        <li role="presentation">
-          <a href="#role" aria-controls="role" role="tab" data-toggle="tab"
-            >角色管理</a
-          >
-        </li>
-        <li role="presentation">
-          <a href="#menu" aria-controls="menu" role="tab" data-toggle="tab"
-            >菜单管理</a
-          >
-        </li>
-      </ul>
-    </nav>
+  // 分页组件点击切换
+  function togglePageBtn(event, object) {
+    //   var activeElement = document.querySelector('.pageBtn .active');
+    // $(activeElement).removeClass('active');
+    let realObject;
+    let activeObject = $(".pageBtn.active");
+    if (typeof object === "undefined") {
+      realObject = $(this);
+    } else {
+      realObject = object;
+    }
+    if (realObject === activeObject) {
+      return;
+    }
 
-    <!-- 内容 -->
-    <content>123</content>
-  </body>
-</html>
+    activeObject.removeClass("active");
+    realObject.addClass("active");
+    pageNo = realObject.text();
+  }
+
+  // 新增用户
+  function addUser(data) {
+    let password = data.password;
+    let hash = CryptoJS.MD5(password).toString();
+    let sign = CryptoJS.AES.encrypt(hash, AES_KEY).toString();
+    password = CryptoJS.AES.encrypt(password, AES_KEY).toString();
+    console.log(
+      CryptoJS.AES.decrypt(password, AES_KEY).toString(CryptoJS.enc.Utf8)
+    );
+    data["password"] = password;
+    data["sign"] = sign;
+    console.log(data);
+    successMessageFloat("新增成功");
+  }
+
+  // 新增用户的表单
+  function addUserFormBox() {
+    createFormBox(
+      "addUser",
+      "新增用户",
+      [
+        {
+          label: "用户编号",
+          type: "text",
+          name: "no",
+          required: true,
+          placeholder: "用户编号",
+          reg: "^[0-9]{3}$",
+          regTitle: "请输入3位数字",
+        },
+        {
+          label: "用户名",
+          type: "text",
+          name: "name",
+          required: true,
+          placeholder: "用户名",
+          reg: "^.{2,12}$",
+          regTitle: "请输入2-12位的字符",
+        },
+        {
+          label: "密码",
+          type: "password",
+          name: "password",
+          required: true,
+          placeholder: "密码",
+          reg: "^[^\u4e00-\u9fa5]{4,16}$",
+          regTitle: "请输入4-16位的数字、字母或特殊字符",
+        },
+        {
+          label: "性别",
+          type: "radio",
+          name: "sex",
+          required: false,
+          options: [
+            {
+              name: "无",
+              value: "",
+              checked: true,
+            },
+            {
+              name: "男",
+              value: "1",
+            },
+            {
+              name: "女",
+              value: "2",
+            },
+          ],
+          placeholder: "性别",
+        },
+        {
+          label: "出生日期",
+          type: "date",
+          name: "birthDay",
+          required: false,
+          placeholder: "出生日期",
+        },
+        {
+          label: "电话",
+          type: "text",
+          name: "phoneNum",
+          required: false,
+          placeholder: "电话",
+          reg: "^$|^[0-9]{7,15}$",
+          regTitle: "请输入有效电话号码",
+        },
+      ],
+      1,
+      (data, closeFun) => {
+        addUser(data);
+        closeFun();
+      }
+    );
+  }
+</script>
+
+<div id="tree2"></div>
+
+<script>
+  $(() => {
+    const jsonData = [
+      {
+        menu: {
+          id: 3,
+          name: "系统管理",
+          order: 1,
+          level: 1,
+          parentId: 0,
+          url: null,
+          createTime: 1702396800000,
+          updateTime: 1702396800000,
+          description: "系统管理, 内部有角色管理、菜单管理和角色管理",
+        },
+        children: [
+          {
+            menu: {
+              id: 5,
+              name: "用户管理",
+              order: 1,
+              level: 2,
+              parentId: 3,
+              url: null,
+              createTime: 1702396800000,
+              updateTime: 1702396800000,
+              description: "用户管理",
+            },
+            children: [],
+          },
+          {
+            menu: {
+              id: 6,
+              name: "角色管理",
+              order: 2,
+              level: 2,
+              parentId: 3,
+              url: null,
+              createTime: 1702396800000,
+              updateTime: 1702396800000,
+              description: "角色管理",
+            },
+            children: [],
+          },
+          {
+            menu: {
+              id: 7,
+              name: "菜单管理",
+              order: 3,
+              level: 2,
+              parentId: 3,
+              url: null,
+              createTime: 1702396800000,
+              updateTime: 1702396800000,
+              description: "菜单管理",
+            },
+            children: [],
+          },
+        ],
+      },
+      {
+        menu: {
+          id: 4,
+          name: "其他菜单管理",
+          order: 2,
+          level: 1,
+          parentId: 0,
+          url: null,
+          createTime: 1702396800000,
+          updateTime: 1702396800000,
+          description: "其他菜单管理， 有除了系统管理之外的其他菜单",
+        },
+        children: [
+          {
+            menu: {
+              id: 1,
+              name: "流程中心",
+              order: 1,
+              level: 2,
+              parentId: 4,
+              url: null,
+              createTime: 1702396800000,
+              updateTime: 1702396800000,
+              description: "所有工作流的父菜单",
+            },
+            children: [
+              {
+                menu: {
+                  id: 2,
+                  name: "流程发起中心",
+                  order: 1,
+                  level: 3,
+                  parentId: 1,
+                  url: null,
+                  createTime: 1702396800000,
+                  updateTime: 1702396800000,
+                  description: "发起所有工作流的父菜单",
+                },
+                children: [],
+              },
+            ],
+          },
+        ],
+      },
+    ];
+    createTree("tree2", jsonData);
+  });
+</script>
+
+<!-- <script>
+
+
+  const treeData2 = convertToTreeData(jsonData);
+  console.log(JSON.stringify(treeData2));
+</script> -->
+
+

@@ -63,3 +63,28 @@
   color:rgb(169, 68, 66);
   font-size: 10px;
 }
+
+
+.btn-tree {
+  font-size: 10px;
+  height: 25px;
+}
+
+.btn-float-right {
+  float: right;
+}
+
+.float-left {
+  float: left !important;
+}
+
+
+.node-tree2 {
+  height: 50px;
+  padding: 12px;
+  font-size: 16px;
+  line-height: 100%;
+}
+.margin-5 {
+  margin: 5px;
+}
