@@ -1,8 +1,9 @@
 package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.service;
 
 import com.apexinfo.livecloud.server.plugins.product.mobile.extend.DemoService;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.MenuMapper;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.RoleMenuMapper;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.IMenuMapper;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.impl.MenuMapperImpl;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.impl.RoleMenuMapperImpl;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.Menu;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.MenuVO;
 import org.apache.log4j.Logger;
@@ -22,7 +23,7 @@ public class MenuService {
 
     private static MenuService instance;
 
-    private MenuMapper menuMapper;
+    private IMenuMapper menuMapper;
 
     public static MenuService getInstance() {
         if (instance == null) {
@@ -32,7 +33,7 @@ public class MenuService {
     }
 
     private MenuService() {
-        menuMapper = new MenuMapper();
+        menuMapper = new MenuMapperImpl();
     }
 
     /**
@@ -131,11 +132,10 @@ public class MenuService {
      * @param id
      * @return
      */
-    @Transactional(rollbackFor = Exception.class)
+    //TODO 事务待修改
     public int delete(List<Long> id) {
         // 删除角色_菜单关联表
-        RoleMenuMapper roleMenuMapper = new RoleMenuMapper();
-        roleMenuMapper.deleteByMenuId(id);
+        RoleMenuService.getInstance().deleteByMenuId(id);
         return menuMapper.delete(id);
     }
 }

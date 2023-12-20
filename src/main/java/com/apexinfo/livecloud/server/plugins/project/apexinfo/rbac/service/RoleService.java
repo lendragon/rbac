@@ -1,10 +1,11 @@
 package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.service;
 
 import com.apexinfo.livecloud.server.plugins.product.mobile.extend.DemoService;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.RoleMapper;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.RoleMenuMapper;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.UserRoleMapper;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.RelaDTO;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.IRoleMapper;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.impl.RoleMapperImpl;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.impl.RoleMenuMapperImpl;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.impl.UserRoleMapperImpl;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.RelativeDTO;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.Role;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.PageDTO;
 import org.apache.log4j.Logger;
@@ -23,7 +24,7 @@ public class RoleService {
 
     private static RoleService instance;
 
-    private RoleMapper roleMapper;
+    private IRoleMapper roleMapper;
 
     public static RoleService getInstance() {
         if (instance == null) {
@@ -33,7 +34,7 @@ public class RoleService {
     }
 
     private RoleService() {
-        roleMapper = new RoleMapper();
+        roleMapper = new RoleMapperImpl();
     }
 
     /**
@@ -101,20 +102,19 @@ public class RoleService {
     /**
      * 修改角色的菜单
      *
-     * @param relaDTO
+     * @param relativeDTO
      * @return
      */
-    @Transactional(rollbackFor = Exception.class)
-    public int updateRoleMenus(RelaDTO relaDTO) {
-        if (relaDTO.getAddList().size() == 0 && relaDTO.getDeleteList().size() == 0) {
+    // TODO 事务待修改
+    public int updateRoleMenus(RelativeDTO relativeDTO) {
+        if (relativeDTO.getAddList().size() == 0 && relativeDTO.getDeleteList().size() == 0) {
             return 1;
         }
         int rows = 0;
-        RoleMenuMapper roleMenuMapper = new RoleMenuMapper();
         // 进行删除操作
-        rows += roleMenuMapper.deleteByList(relaDTO.getId(), relaDTO.getDeleteList());
+        rows += RoleMenuService.getInstance().deleteByList(relativeDTO.getId(), relativeDTO.getDeleteList());
         // 进行新增操作
-        rows += roleMenuMapper.add(relaDTO.getId(), relaDTO.getAddList());
+        rows += RoleMenuService.getInstance().add(relativeDTO.getId(), relativeDTO.getAddList());
         return rows;
     }
 
@@ -124,14 +124,13 @@ public class RoleService {
      * @param id
      * @return
      */
+    // TODO 事务待修改
     @Transactional(rollbackFor = Exception.class)
     public int delete(List<Long> id) {
         // 删除用户_角色关联表
-        UserRoleMapper userRoleMapper = new UserRoleMapper();
-        userRoleMapper.deleteByRoleId(id);
+        UserRoleService.getInstance().deleteByRoleId(id);
         // 删除角色_菜单关联表
-        RoleMenuMapper roleMenuMapper = new RoleMenuMapper();
-        roleMenuMapper.deleteByRoleId(id);
+        RoleMenuService.getInstance().deleteByRoleId(id);
         return roleMapper.delete(id);
     }
 }

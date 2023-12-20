@@ -1,10 +1,11 @@
 package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.service;
 
 import com.apexinfo.livecloud.server.plugins.product.mobile.extend.DemoService;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.UserMapper;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.UserRoleMapper;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.IUserMapper;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.impl.UserMapperImpl;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.impl.UserRoleMapperImpl;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.PageDTO;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.RelaDTO;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.RelativeDTO;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.User;
 import org.apache.log4j.Logger;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,7 +23,7 @@ public class UserService {
 
     private static UserService instance;
 
-    private UserMapper userMapper;
+    private IUserMapper userMapper;
 
     public static UserService getInstance() {
         if (instance == null) {
@@ -32,7 +33,7 @@ public class UserService {
     }
 
     private UserService() {
-        userMapper = new UserMapper();
+        userMapper = new UserMapperImpl();
     }
 
     /**
@@ -60,6 +61,17 @@ public class UserService {
             pageDTO.setPageSize(1);
         }
         return pageDTO;
+    }
+
+    /**
+     * 根据用户编号或用户名查找用户
+     *
+     * @param no
+     * @param name
+     * @return
+     */
+    public List<User> queryByNoOrName(String no, String name) {
+        return userMapper.queryByNoOrName(no, name);
     }
 
     /**
@@ -92,20 +104,19 @@ public class UserService {
     /**
      * 修改用户的角色
      *
-     * @param relaDTO
+     * @param relativeDTO
      * @return
      */
-    @Transactional(rollbackFor = Exception.class)
-    public int updateUserRoles(RelaDTO relaDTO) {
-        if (relaDTO.getAddList().size() == 0 && relaDTO.getDeleteList().size() == 0) {
+    // TODO 事务待修改
+    public int updateUserRoles(RelativeDTO relativeDTO) {
+        if (relativeDTO.getAddList().size() == 0 && relativeDTO.getDeleteList().size() == 0) {
             return 1;
         }
         int rows = 0;
-        UserRoleMapper userRoleMapper = new UserRoleMapper();
         // 进行删除操作
-        rows += userRoleMapper.deleteByIdList(relaDTO.getId(), relaDTO.getDeleteList());
+        rows += UserRoleService.getInstance().deleteByIdList(relativeDTO.getId(), relativeDTO.getDeleteList());
         // 进行新增操作
-        rows += userRoleMapper.add(relaDTO.getId(), relaDTO.getAddList());
+        rows += UserRoleService.getInstance().add(relativeDTO.getId(), relativeDTO.getAddList());
         return rows;
     }
 
@@ -115,10 +126,9 @@ public class UserService {
      * @param id
      * @return
      */
-    @Transactional(rollbackFor = Exception.class)
+    // TODO 事务待修改
     public int delete(List<Long> id) {
-        UserRoleMapper userRoleMapper = new UserRoleMapper();
-        userRoleMapper.deleteByUserId(id);
+        UserRoleService.getInstance().deleteByUserId(id);
         return userMapper.delete(id);
     }
 }

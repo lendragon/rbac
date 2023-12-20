@@ -9,7 +9,7 @@ import java.util.List;
  * @Date 2023/12/18
  * @Version 1.0
  */
-public class RelaDTO {
+public class RelativeDTO {
     // 要修改的实体id
     private Long id;
     // 要添加的id列表
@@ -17,10 +17,10 @@ public class RelaDTO {
     // 要删除的id列表
     private List<Long> deleteList;
 
-    public RelaDTO() {
+    public RelativeDTO() {
     }
 
-    public RelaDTO(Long id, List<Long> addList, List<Long> deleteList) {
+    public RelativeDTO(Long id, List<Long> addList, List<Long> deleteList) {
         this.id = id;
         this.addList = addList;
         this.deleteList = deleteList;

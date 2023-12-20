@@ -1,10 +1,10 @@
-package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper;
+package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.impl;
 
 import com.apex.util.ApexDao;
 import com.apexinfo.livecloud.server.core.GeneralMapper;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.common.SQLCommon;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant.UserRoleConstants;
-import org.springframework.transaction.annotation.Transactional;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant.CommonConstants;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.util.SQLUtil;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.IUserRoleMapper;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.sql.SQLException;
@@ -17,7 +17,7 @@ import java.util.List;
  * @Date 2023/12/14
  * @Version 1.0
  */
-public class UserRoleMapper extends GeneralMapper {
+public class UserRoleMapperImpl extends GeneralMapper implements IUserRoleMapper {
     /**
      * 根据用户id新增对应的角色
      *
@@ -25,7 +25,8 @@ public class UserRoleMapper extends GeneralMapper {
      * @param addId
      * @return
      */
-    @Transactional(rollbackFor = Exception.class)
+    // TODO 事务待修改
+    @Override
     public int add(Long userId, List<Long> addId) {
         int rows = 0;
         ApexDao dao = null;
@@ -34,7 +35,7 @@ public class UserRoleMapper extends GeneralMapper {
             dao = new ApexDao();
             dao.prepareStatement(sql);
             for (Long roleId : addId) {
-                long nextID = getNextID(UserRoleConstants.STUDIO_RBAC_USER_ROLE);
+                long nextID = getNextID(CommonConstants.TABLE_RBAC_USER_ROLE);
                 dao.setLong(1, nextID);
                 dao.setLong(2, userId);
                 dao.setLong(3, roleId);
@@ -44,7 +45,6 @@ public class UserRoleMapper extends GeneralMapper {
         } catch (SQLException e) {
             rows = 0;
             e.printStackTrace();
-            logger.debug(e.getMessage(), e);
             logger.error(e.getMessage(), e);
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
         } finally {
@@ -60,14 +60,15 @@ public class UserRoleMapper extends GeneralMapper {
      * @param deleteId
      * @return
      */
-    @Transactional(rollbackFor = Exception.class)
+    // TODO 事务待修改
+    @Override
     public int deleteByIdList(Long userId, List<Long> deleteId) {
         int rows = 0;
         ApexDao dao = null;
         try {
             StringBuilder sql = new StringBuilder();
             sql.append("delete from CT_Rbac_User_Role where FUserId = ? and FRoleId in ");
-            sql.append(SQLCommon.listToSQLList(deleteId));
+            sql.append(SQLUtil.listToSQLList(deleteId));
 
             dao = new ApexDao();
             dao.prepareStatement(sql.toString());
@@ -78,7 +79,6 @@ public class UserRoleMapper extends GeneralMapper {
             rows = dao.executeUpdate(getDataSource());
         } catch (SQLException e) {
             e.printStackTrace();
-            logger.debug(e.getMessage(), e);
             logger.error(e.getMessage(), e);
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
         } finally {
@@ -93,14 +93,15 @@ public class UserRoleMapper extends GeneralMapper {
      * @param userId
      * @return
      */
-    @Transactional(rollbackFor = Exception.class)
+    // TODO 事务待修改
+    @Override
     public int deleteByUserId(List<Long> userId) {
         int rows = 0;
         ApexDao dao = null;
         try {
             StringBuilder sql = new StringBuilder();
             sql.append("delete from CT_Rbac_User_Role where FUserId in ");
-            sql.append(SQLCommon.listToSQLList(userId));
+            sql.append(SQLUtil.listToSQLList(userId));
 
             dao = new ApexDao();
             dao.prepareStatement(sql.toString());
@@ -110,7 +111,6 @@ public class UserRoleMapper extends GeneralMapper {
             rows = dao.executeUpdate(getDataSource());
         } catch (SQLException e) {
             e.printStackTrace();
-            logger.debug(e.getMessage(), e);
             logger.error(e.getMessage(), e);
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
         } finally {
@@ -125,14 +125,15 @@ public class UserRoleMapper extends GeneralMapper {
      * @param roleId
      * @return
      */
-    @Transactional(rollbackFor = Exception.class)
+    // TODO 事务待修改
+    @Override
     public int deleteByRoleId(List<Long> roleId) {
         int rows = 0;
         ApexDao dao = null;
         try {
             StringBuilder sql = new StringBuilder();
             sql.append("delete from CT_Rbac_User_Role where FRoleId in ");
-            sql.append(SQLCommon.listToSQLList(roleId));
+            sql.append(SQLUtil.listToSQLList(roleId));
 
             dao = new ApexDao();
             dao.prepareStatement(sql.toString());
@@ -142,7 +143,6 @@ public class UserRoleMapper extends GeneralMapper {
             rows = dao.executeUpdate(getDataSource());
         } catch (SQLException e) {
             e.printStackTrace();
-            logger.debug(e.getMessage(), e);
             logger.error(e.getMessage(), e);
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
         } finally {

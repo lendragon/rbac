@@ -52,7 +52,6 @@
     </div>
 
     <script>
-      const AES_KEY = "0123456789abcdef";
       const ROUTE_USER =
         "${pageContext.request.contextPath}/livecloud/project/user.pagex";
       const ROUTE_USER_ROLE =

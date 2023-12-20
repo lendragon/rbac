@@ -1,11 +1,12 @@
-package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper;
+package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.impl;
 
 import com.apex.util.ApexDao;
 import com.apexinfo.livecloud.server.core.GeneralMapper;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.common.SQLCommon;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant.RoleMenuConstants;
-import org.springframework.transaction.annotation.Transactional;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant.CommonConstants;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.util.SQLUtil;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.IRoleMenuMapper;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
+
 import java.sql.SQLException;
 import java.util.List;
 
@@ -16,7 +17,7 @@ import java.util.List;
  * @Date 2023/12/14
  * @Version 1.0
  */
-public class RoleMenuMapper extends GeneralMapper {
+public class RoleMenuMapperImpl extends GeneralMapper implements IRoleMenuMapper {
     /**
      * 根据角色id新增对应的菜单
      *
@@ -24,7 +25,8 @@ public class RoleMenuMapper extends GeneralMapper {
      * @param addId
      * @return
      */
-    @Transactional(rollbackFor = Exception.class)
+    // TODO 事务待修改
+    @Override
     public int add(Long roleId, List<Long> addId) {
         int rows = 0;
         ApexDao dao = null;
@@ -33,7 +35,7 @@ public class RoleMenuMapper extends GeneralMapper {
             dao = new ApexDao();
             dao.prepareStatement(sql);
             for (Long menuId : addId) {
-                long nextID = getNextID(RoleMenuConstants.STUDIO_RBAC_ROLE_MENU);
+                long nextID = getNextID(CommonConstants.TABLE_RBAC_ROLE_MENU);
                 dao.setLong(1, nextID);
                 dao.setLong(2, roleId);
                 dao.setLong(3, menuId);
@@ -43,7 +45,6 @@ public class RoleMenuMapper extends GeneralMapper {
         } catch (SQLException e) {
             rows = 0;
             e.printStackTrace();
-            logger.debug(e.getMessage(), e);
             logger.error(e.getMessage(), e);
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
         } finally {
@@ -59,14 +60,15 @@ public class RoleMenuMapper extends GeneralMapper {
      * @param deleteId
      * @return
      */
-    @Transactional(rollbackFor = Exception.class)
+    // TODO 事务待修改
+    @Override
     public int deleteByList(Long roleId, List<Long> deleteId) {
         int rows = 0;
         ApexDao dao = null;
         try {
             StringBuilder sql = new StringBuilder();
             sql.append("delete from CT_Rbac_Role_Menu where FRoleId = ? and FMenuId in ");
-            sql.append(SQLCommon.listToSQLList(deleteId));
+            sql.append(SQLUtil.listToSQLList(deleteId));
 
             dao = new ApexDao();
             dao.prepareStatement(sql.toString());
@@ -77,7 +79,6 @@ public class RoleMenuMapper extends GeneralMapper {
             rows = dao.executeUpdate(getDataSource());
         } catch (SQLException e) {
             e.printStackTrace();
-            logger.debug(e.getMessage(), e);
             logger.error(e.getMessage(), e);
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
         } finally {
@@ -92,14 +93,15 @@ public class RoleMenuMapper extends GeneralMapper {
      * @param roleId
      * @return
      */
-    @Transactional(rollbackFor = Exception.class)
+    // TODO 事务待修改
+    @Override
     public int deleteByRoleId(List<Long> roleId) {
         int rows = 0;
         ApexDao dao = null;
         try {
             StringBuilder sql = new StringBuilder();
             sql.append("delete from CT_Rbac_Role_Menu where FRoleId in ");
-            sql.append(SQLCommon.listToSQLList(roleId));
+            sql.append(SQLUtil.listToSQLList(roleId));
 
             dao = new ApexDao();
             dao.prepareStatement(sql.toString());
@@ -109,7 +111,6 @@ public class RoleMenuMapper extends GeneralMapper {
             rows = dao.executeUpdate(getDataSource());
         } catch (SQLException e) {
             e.printStackTrace();
-            logger.debug(e.getMessage(), e);
             logger.error(e.getMessage(), e);
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
         } finally {
@@ -124,14 +125,15 @@ public class RoleMenuMapper extends GeneralMapper {
      * @param menuId
      * @return
      */
-    @Transactional(rollbackFor = Exception.class)
+    // TODO 事务待修改
+    @Override
     public int deleteByMenuId(List<Long> menuId) {
         int rows = 0;
         ApexDao dao = null;
         try {
             StringBuilder sql = new StringBuilder();
             sql.append("delete from CT_Rbac_Role_Menu where FMenuId in ");
-            sql.append(SQLCommon.listToSQLList(menuId));
+            sql.append(SQLUtil.listToSQLList(menuId));
 
             dao = new ApexDao();
             dao.prepareStatement(sql.toString());
@@ -141,7 +143,6 @@ public class RoleMenuMapper extends GeneralMapper {
             rows = dao.executeUpdate(getDataSource());
         } catch (SQLException e) {
             e.printStackTrace();
-            logger.debug(e.getMessage(), e);
             logger.error(e.getMessage(), e);
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
         } finally {

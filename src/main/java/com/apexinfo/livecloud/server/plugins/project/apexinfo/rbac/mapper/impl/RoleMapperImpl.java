@@ -1,13 +1,14 @@
-package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper;
+package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.impl;
 
 import com.apex.util.ApexDao;
 import com.apex.util.ApexRowSet;
+import com.apex.util.Util;
 import com.apexinfo.livecloud.server.core.GeneralMapper;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.common.SQLCommon;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant.RoleConstants;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant.CommonConstants;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.util.SQLUtil;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.IRoleMapper;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.PageDTO;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.Role;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.sql.SQLException;
@@ -21,7 +22,7 @@ import java.util.List;
  * @Date 2023/12/13
  * @Version 1.0
  */
-public class RoleMapper extends GeneralMapper {
+public class RoleMapperImpl extends GeneralMapper implements IRoleMapper {
     /**
      * 分页模糊查询角色
      *
@@ -30,6 +31,7 @@ public class RoleMapper extends GeneralMapper {
      * @param keyword
      * @return
      */
+    @Override
     public PageDTO<Role> query(Integer pageNo, Integer pageSize, String keyword) {
         PageDTO<Role> pageDTO = new PageDTO<>();
         List<Role> roles = new ArrayList<>();
@@ -43,13 +45,13 @@ public class RoleMapper extends GeneralMapper {
             sql.append("select ID, FName, FCreateTime, FUpdateTime, FDescription ");
             sql.append("from CT_Rbac_Role where 1 = 1 ");
             // 拼接模糊查询SQL
-            if (keyword != null && !keyword.isEmpty()) {
-                SQLCommon.likeContact(sql, "FName", "FDescription");
+            if (!Util.isEmpty(keyword)) {
+                SQLUtil.likeContact(sql, "FName", "FDescription");
             }
             dao = new ApexDao();
             dao.prepareStatement(sql.toString());
-            if (keyword != null && !keyword.isEmpty()) {
-                SQLCommon.setLikeSQL(dao, keyword, 1, 2);
+            if (!Util.isEmpty(keyword)) {
+                SQLUtil.setLikeSQL(dao, keyword, 1, 2);
             }
             rs = dao.getRowSet(getDataSource(), pageNo, pageSize, null);
             pageDTO.setTotal(rs.getCount());
@@ -64,7 +66,6 @@ public class RoleMapper extends GeneralMapper {
             }
         } catch (SQLException e) {
             e.printStackTrace();
-            logger.debug(e.getMessage(), e);
             logger.error(e.getMessage(), e);
         } finally {
             closeResource(dao, rs);
@@ -78,6 +79,7 @@ public class RoleMapper extends GeneralMapper {
      * @param userId
      * @return
      */
+    @Override
     public PageDTO<Role> queryByUserId(Long userId) {
         PageDTO<Role> pageDTO = new PageDTO<>();
         List<Role> roles = new ArrayList<>();
@@ -106,7 +108,6 @@ public class RoleMapper extends GeneralMapper {
             }
         } catch (SQLException e) {
             e.printStackTrace();
-            logger.debug(e.getMessage(), e);
             logger.error(e.getMessage(), e);
         } finally {
             closeResource(dao, rs);
@@ -120,6 +121,7 @@ public class RoleMapper extends GeneralMapper {
      * @param id
      * @return
      */
+    @Override
     public PageDTO<Role> queryById(Long id) {
         PageDTO<Role> pageDTO = new PageDTO<>();
         List<Role> roles = new ArrayList<>();
@@ -147,7 +149,6 @@ public class RoleMapper extends GeneralMapper {
             }
         } catch (SQLException e) {
             e.printStackTrace();
-            logger.debug(e.getMessage(), e);
             logger.error(e.getMessage(), e);
         } finally {
             closeResource(dao, rs);
@@ -161,11 +162,12 @@ public class RoleMapper extends GeneralMapper {
      * @param role
      * @return
      */
+    @Override
     public int add(Role role) {
         int rows = 0;
         ApexDao dao = null;
         try {
-            long nextId = getNextID(RoleConstants.STUDIO_RBAC_ROLE);
+            long nextId = getNextID(CommonConstants.TABLE_RBAC_ROLE);
             role.setId(nextId);
             StringBuilder sql = new StringBuilder();
             sql.append("insert into CT_Rbac_Role(ID, FName, FCreateTime, FUpdateTime, FDescription) ");
@@ -182,7 +184,6 @@ public class RoleMapper extends GeneralMapper {
             rows = dao.executeUpdate(getDataSource());
         } catch (SQLException e) {
             e.printStackTrace();
-            logger.debug(e.getMessage(), e);
             logger.error(e.getMessage(), e);
         } finally {
             closeResource(dao);
@@ -197,6 +198,7 @@ public class RoleMapper extends GeneralMapper {
      * @param role
      * @return
      */
+    @Override
     public int update(Role role) {
         int rows = 0;
         ApexDao dao = null;
@@ -215,7 +217,6 @@ public class RoleMapper extends GeneralMapper {
             rows = dao.executeUpdate(getDataSource());
         } catch (SQLException e) {
             e.printStackTrace();
-            logger.debug(e.getMessage(), e);
             logger.error(e.getMessage(), e);
         } finally {
             closeResource(dao);
@@ -229,14 +230,15 @@ public class RoleMapper extends GeneralMapper {
      * @param id
      * @return
      */
-    @Transactional(rollbackFor = Exception.class)
+    // TODO 事务待修改
+    @Override
     public int delete(List<Long> id) {
         int rows = 0;
         ApexDao dao = null;
         try {
             StringBuilder sql = new StringBuilder();
             sql.append("delete from CT_Rbac_Role where ID in ");
-            sql.append(SQLCommon.listToSQLList(id));
+            sql.append(SQLUtil.listToSQLList(id));
 
             dao = new ApexDao();
             dao.prepareStatement(sql.toString());
@@ -246,7 +248,6 @@ public class RoleMapper extends GeneralMapper {
             rows = dao.executeUpdate(getDataSource());
         } catch (SQLException e) {
             e.printStackTrace();
-            logger.debug(e.getMessage(), e);
             logger.error(e.getMessage(), e);
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
         } finally {

@@ -1,13 +1,13 @@
-package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper;
+package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.impl;
 
 import com.apex.util.ApexDao;
 import com.apex.util.ApexRowSet;
 import com.apexinfo.livecloud.server.core.GeneralMapper;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.common.SQLCommon;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant.UserConstants;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant.CommonConstants;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.util.SQLUtil;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.IUserMapper;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.PageDTO;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.User;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.sql.SQLException;
@@ -21,7 +21,7 @@ import java.util.List;
  * @Date 2023/12/13
  * @Version 1.0
  */
-public class UserMapper extends GeneralMapper {
+public class UserMapperImpl extends GeneralMapper implements IUserMapper {
 
     /**
      * 分页查询用户
@@ -31,6 +31,7 @@ public class UserMapper extends GeneralMapper {
      * @param keyword
      * @return
      */
+    @Override
     public PageDTO<User> query(Integer pageNo, Integer pageSize, String keyword) {
         PageDTO<User> pageDTO = new PageDTO<>();
         List<User> users = new ArrayList<>();
@@ -46,12 +47,12 @@ public class UserMapper extends GeneralMapper {
             sql.append("from CT_Rbac_User where 1 = 1 ");
             // 模糊查询拼接SQL
             if (keyword != null && !keyword.isEmpty()) {
-                SQLCommon.likeContact(sql, "FNo", "FName", "FSex", "FBirthDay", "FPhoneNum");
+                SQLUtil.likeContact(sql, "FNo", "FName", "FSex", "FBirthDay", "FPhoneNum");
             }
             dao = new ApexDao();
             dao.prepareStatement(sql.toString());
             if (keyword != null && !keyword.isEmpty()) {
-                SQLCommon.setLikeSQL(dao, keyword, 1, 5);
+                SQLUtil.setLikeSQL(dao, keyword, 1, 5);
             }
             rs = dao.getRowSet(getDataSource(), pageNo, pageSize, null);
             pageDTO.setTotal(rs.getCount());
@@ -70,7 +71,6 @@ public class UserMapper extends GeneralMapper {
             }
         } catch (SQLException e) {
             e.printStackTrace();
-            logger.debug(e.getMessage(), e);
             logger.error(e.getMessage(), e);
         } finally {
             closeResource(dao, rs);
@@ -84,6 +84,7 @@ public class UserMapper extends GeneralMapper {
      * @param id
      * @return
      */
+    @Override
     public PageDTO<User> queryById(Long id) {
         PageDTO<User> pageDTO = new PageDTO<>();
         List<User> users = new ArrayList<>();
@@ -116,7 +117,6 @@ public class UserMapper extends GeneralMapper {
             }
         } catch (SQLException e) {
             e.printStackTrace();
-            logger.debug(e.getMessage(), e);
             logger.error(e.getMessage(), e);
         } finally {
             closeResource(dao, rs);
@@ -125,16 +125,53 @@ public class UserMapper extends GeneralMapper {
     }
 
     /**
+     * 根据用户编号或用户名查找用户
+     *
+     * @param no
+     * @param name
+     * @return
+     */
+    @Override
+    public List<User> queryByNoOrName(String no, String name) {
+        List<User> users = new ArrayList<>();
+        ApexDao dao = null;
+        ApexRowSet rs = null;
+        try {
+            String sql = "select ID, FNo, FName from CT_Rbac_User where FNo = ? or FName = ?";
+
+            dao = new ApexDao();
+            dao.prepareStatement(sql);
+            dao.setString(1, no);
+            dao.setString(2, name);
+            rs = dao.getRowSet(getDataSource());
+            while (rs.next()) {
+                User user = new User();
+                user.setId(rs.getLong("ID"));
+                user.setNo(rs.getString("FNo"));
+                user.setName(rs.getString("FName"));
+                users.add(user);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+        } finally {
+            closeResource(dao, rs);
+        }
+        return users;
+    }
+
+    /**
      * 新增用户
      *
      * @param user
      * @return
      */
+    @Override
     public int add(User user) {
         int rows = 0;
         ApexDao dao = null;
         try {
-            long nextId = getNextID(UserConstants.STUDIO_RBAC_USER);
+            long nextId = getNextID(CommonConstants.TABLE_RBAC_USER);
             user.setId(nextId);
             StringBuilder sql = new StringBuilder();
             sql.append("insert into CT_Rbac_User(ID, FNo, FName, FSex, FBirthDay, FPhoneNum, FCreateTime, FUpdateTime ");
@@ -159,7 +196,6 @@ public class UserMapper extends GeneralMapper {
             rows = dao.executeUpdate(getDataSource());
         } catch (SQLException e) {
             e.printStackTrace();
-            logger.debug(e.getMessage(), e);
             logger.error(e.getMessage(), e);
         } finally {
             closeResource(dao);
@@ -173,6 +209,7 @@ public class UserMapper extends GeneralMapper {
      * @param user
      * @return
      */
+    @Override
     public int update(User user) {
         int rows = 0;
         ApexDao dao = null;
@@ -201,7 +238,6 @@ public class UserMapper extends GeneralMapper {
             rows = dao.executeUpdate(getDataSource());
         } catch (SQLException e) {
             e.printStackTrace();
-            logger.debug(e.getMessage(), e);
             logger.error(e.getMessage(), e);
         } finally {
             closeResource(dao);
@@ -215,14 +251,15 @@ public class UserMapper extends GeneralMapper {
      * @param id
      * @return
      */
-    @Transactional(rollbackFor = Exception.class)
+    // TODO 事务待修改
+    @Override
     public int delete(List<Long> id) {
         int rows = 0;
         ApexDao dao = null;
         try {
             StringBuilder sql = new StringBuilder();
             sql.append("delete from CT_Rbac_User where ID in ");
-            sql.append(SQLCommon.listToSQLList(id));
+            sql.append(SQLUtil.listToSQLList(id));
             dao = new ApexDao();
             dao.prepareStatement(sql.toString());
             for (int i = 0; i < id.size(); i++) {
@@ -231,7 +268,6 @@ public class UserMapper extends GeneralMapper {
             rows = dao.executeUpdate(getDataSource());
         } catch (SQLException e) {
             e.printStackTrace();
-            logger.debug(e.getMessage(), e);
             logger.error(e.getMessage(), e);
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
         } finally {

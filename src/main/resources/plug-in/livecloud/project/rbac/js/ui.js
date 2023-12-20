@@ -198,8 +198,8 @@ function createPageBtn(total, disLastNext, queryFunName) {
   $("#pageBtnUl").html(btnHtml);
   $($(".pageBtn")[pageNo - 1]).addClass("active")
   // 绑定监听事件
-  $("#nextPageBtn").click(nextTogglePageBtn);
-  $("#lastPageBtn").click(lastTogglePageBtn);
+  $("#nextPageBtn").click(() => {nextTogglePageBtn(window[queryFunName])});
+  $("#lastPageBtn").click(() => {lastTogglePageBtn(window[queryFunName])});
 }
 
 function togglePageBtn(event, pageNoTmp, queryFun) {
@@ -218,19 +218,19 @@ function togglePageBtn(event, pageNoTmp, queryFun) {
 }
 
 // 下一个按钮点击事件
-function nextTogglePageBtn() {
+function nextTogglePageBtn(queryFun) {
   if (pageNo >= $(".pageBtn").length) {
     return;
   }
-  togglePageBtn(event, pageNo + 1);
+  togglePageBtn(event, pageNo + 1, queryFun);
 }
 
 // 上一个按钮点击事件
-function lastTogglePageBtn() {
+function lastTogglePageBtn(queryFun) {
   if (pageNo <= 1) {
     return;
   }
-  togglePageBtn(event, pageNo - 1);
+  togglePageBtn(event, pageNo - 1, queryFun);
 }
 
 

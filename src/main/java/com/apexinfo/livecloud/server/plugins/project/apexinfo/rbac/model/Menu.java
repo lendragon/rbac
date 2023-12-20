@@ -1,5 +1,7 @@
 package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model;
 
+import org.codehaus.jackson.annotate.JsonProperty;
+
 import java.util.Date;
 
 /**
@@ -10,6 +12,7 @@ import java.util.Date;
  * @Version 1.0
  */
 public class Menu {
+    @JsonProperty("menuId")
     // 菜单标识
     private Long id;
     // 菜单名称
@@ -22,12 +25,14 @@ public class Menu {
     private Long parentId;
     // 菜单路径
     private String url;
+    // 菜单状态
+    private Integer state;
+    // 菜单描述
+    private String description;
     // 创建时间
     private Date createTime;
     // 修改时间
     private Date updateTime;
-    // 菜单描述
-    private String description;
 
     public Menu() {
     }
@@ -42,6 +47,14 @@ public class Menu {
         this.createTime = createTime;
         this.updateTime = updateTime;
         this.description = description;
+    }
+
+    public Integer getState() {
+        return state;
+    }
+
+    public void setState(Integer state) {
+        this.state = state;
     }
 
     public Long getId() {

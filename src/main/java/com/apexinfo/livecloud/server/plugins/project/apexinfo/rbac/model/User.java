@@ -1,5 +1,7 @@
 package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model;
 
+import org.codehaus.jackson.annotate.JsonProperty;
+
 import java.util.Date;
 
 /**
@@ -11,6 +13,7 @@ import java.util.Date;
  */
 public class User {
     // 用户标识
+    @JsonProperty("userId")
     private Long id;
     // 用户编号
     private String no;
@@ -24,6 +27,8 @@ public class User {
     private Date birthDay;
     // 手机号
     private String phoneNum;
+    // 角色状态
+    private Integer state;
     // 创建时间
     private Date createTime;
     // 修改时间
@@ -42,6 +47,14 @@ public class User {
         this.phoneNum = phoneNum;
         this.createTime = createTime;
         this.updateTime = updateTime;
+    }
+
+    public Integer getState() {
+        return state;
+    }
+
+    public void setState(Integer state) {
+        this.state = state;
     }
 
     public Long getId() {

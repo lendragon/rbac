@@ -1,11 +1,13 @@
-package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper;
+package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.impl;
 
 import com.apex.util.ApexDao;
 import com.apex.util.ApexRowSet;
 import com.apexinfo.livecloud.server.core.GeneralMapper;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.common.SQLCommon;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant.MenuConstants;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant.CommonConstants;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.util.SQLUtil;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.IMenuMapper;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.Menu;
+
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,13 +19,14 @@ import java.util.List;
  * @Date 2023/12/13
  * @Version 1.0
  */
-public class MenuMapper extends GeneralMapper {
+public class MenuMapperImpl extends GeneralMapper implements IMenuMapper {
 
     /**
      * 查询所有菜单
      *
      * @return
      */
+    @Override
     public List<Menu> query() {
         List<Menu> menus = new ArrayList<>();
         ApexDao dao = null;
@@ -51,7 +54,6 @@ public class MenuMapper extends GeneralMapper {
             }
         } catch (SQLException e) {
             e.printStackTrace();
-            logger.debug(e.getMessage(), e);
             logger.error(e.getMessage(), e);
         } finally {
             closeResource(dao, rs);
@@ -65,6 +67,7 @@ public class MenuMapper extends GeneralMapper {
      * @param menuId
      * @return
      */
+    @Override
     public List<Menu> queryById(Long menuId) {
         List<Menu> menus = new ArrayList<>();
         ApexDao dao = null;
@@ -94,7 +97,6 @@ public class MenuMapper extends GeneralMapper {
             }
         } catch (SQLException e) {
             e.printStackTrace();
-            logger.debug(e.getMessage(), e);
             logger.error(e.getMessage(), e);
         } finally {
             closeResource(dao, rs);
@@ -108,6 +110,7 @@ public class MenuMapper extends GeneralMapper {
      * @param roleId
      * @return
      */
+    @Override
     public List<Menu> queryByRoleId(Long roleId) {
         List<Menu> menus = new ArrayList<>();
         ApexDao dao = null;
@@ -139,7 +142,6 @@ public class MenuMapper extends GeneralMapper {
             }
         } catch (SQLException e) {
             e.printStackTrace();
-            logger.debug(e.getMessage(), e);
             logger.error(e.getMessage(), e);
         } finally {
             closeResource(dao, rs);
@@ -153,6 +155,7 @@ public class MenuMapper extends GeneralMapper {
      * @param userId
      * @return
      */
+    @Override
     public List<Menu> queryByUserId(Long userId) {
         List<Menu> menus = new ArrayList<>();
         ApexDao dao = null;
@@ -186,7 +189,6 @@ public class MenuMapper extends GeneralMapper {
             }
         } catch (SQLException e) {
             e.printStackTrace();
-            logger.debug(e.getMessage(), e);
             logger.error(e.getMessage(), e);
         } finally {
             closeResource(dao, rs);
@@ -200,11 +202,12 @@ public class MenuMapper extends GeneralMapper {
      * @param menu
      * @return
      */
+    @Override
     public int add(Menu menu) {
         int rows = 0;
         ApexDao dao = null;
         try {
-            long nextId = getNextID(MenuConstants.STUDIO_RBAC_MENU);
+            long nextId = getNextID(CommonConstants.TABLE_RBAC_MENU);
             menu.setId(nextId);
 
             StringBuilder sql = new StringBuilder();
@@ -226,7 +229,6 @@ public class MenuMapper extends GeneralMapper {
             rows = dao.executeUpdate(getDataSource());
         } catch (SQLException e) {
             e.printStackTrace();
-            logger.debug(e.getMessage(), e);
             logger.error(e.getMessage(), e);
         } finally {
             closeResource(dao);
@@ -240,6 +242,7 @@ public class MenuMapper extends GeneralMapper {
      * @param menu
      * @return
      */
+    @Override
     public int update(Menu menu) {
         int rows = 0;
         ApexDao dao = null;
@@ -263,7 +266,6 @@ public class MenuMapper extends GeneralMapper {
             rows = dao.executeUpdate(getDataSource());
         } catch (SQLException e) {
             e.printStackTrace();
-            logger.debug(e.getMessage(), e);
             logger.error(e.getMessage(), e);
         } finally {
             closeResource(dao);
@@ -277,13 +279,14 @@ public class MenuMapper extends GeneralMapper {
      * @param id
      * @return
      */
+    @Override
     public int delete(List<Long> id) {
         int rows = 0;
         ApexDao dao = null;
         try {
             StringBuilder sql = new StringBuilder();
             sql.append("delete from CT_Rbac_Menu where ID in ");
-            sql.append(SQLCommon.listToSQLList(id));
+            sql.append(SQLUtil.listToSQLList(id));
 
             dao = new ApexDao();
             dao.prepareStatement(sql.toString());
@@ -293,7 +296,6 @@ public class MenuMapper extends GeneralMapper {
             rows = dao.executeUpdate(getDataSource());
         } catch (SQLException e) {
             e.printStackTrace();
-            logger.debug(e.getMessage(), e);
             logger.error(e.getMessage(), e);
         } finally {
             closeResource(dao);
