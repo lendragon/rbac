@@ -3,12 +3,12 @@ package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.service;
 import com.apexinfo.livecloud.server.plugins.product.mobile.extend.DemoService;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.RoleMapper;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.RoleMenuMapper;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.Menu;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.UserRoleMapper;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.RelaDTO;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.Role;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.PageDTO;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.log4j.Logger;
-
+import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 
 /**
@@ -42,35 +42,32 @@ public class RoleService {
      * @param pageNo
      * @param pageSize
      * @param keyword
+     * @param roleId
      * @param userId
      * @return
      */
-    public PageDTO<Role> query(Long pageNo, Long pageSize, String keyword, Long userId, Long roleId) {
-        PageDTO<Role> pageDTO = new PageDTO<>();
-        List<Role> roles = null;
-        int count = 0;
+    public PageDTO<Role> query(Integer pageNo, Integer pageSize, String keyword, Long userId, Long roleId) {
+        PageDTO<Role> pageDTO = null;
         if (roleId != null) {
-            roles =  roleMapper.queryById(roleId);
-            count = roles.size();
-            pageDTO.setPageSize(count);
+            // 根据id查询角色
+            pageDTO =  roleMapper.queryById(roleId);
+            pageDTO.setPageNo(pageNo);
+            pageDTO.setPageSize(pageSize);
         } else if (userId == null) {
+            // 查询所有角色
             if (pageNo == null) {
-                pageNo = 1L;
+                pageNo = 1;
             }
             if (pageSize == null) {
-                pageSize = 20L;
+                pageSize = 20;
             }
-            roles =  roleMapper.query(pageNo, pageSize, keyword);
-            count = roleMapper.count(keyword);
-            pageDTO.setPageSize(Math.toIntExact(pageSize));
+            pageDTO =  roleMapper.query(pageNo, pageSize, keyword);
         } else {
-            roles =  roleMapper.queryByUserId(userId);
-            count = roles.size();
-            pageDTO.setPageSize(count);
+            // 根据用户id查询角色
+            pageDTO =  roleMapper.queryByUserId(userId);
+            pageDTO.setPageNo(pageNo);
+            pageDTO.setPageNo(pageSize);
         }
-        pageDTO.setRecords(roles);
-        pageDTO.setTotal(count);
-
         return pageDTO;
     }
 
@@ -104,36 +101,21 @@ public class RoleService {
     /**
      * 修改角色的菜单
      *
-     * @param roleId
-     * @param menuId
+     * @param relaDTO
      * @return
      */
-    public int updateRoleMenus(Long roleId, Set<Long> menuId) {
+    @Transactional(rollbackFor = Exception.class)
+    public int updateRoleMenus(RelaDTO relaDTO) {
+        if (relaDTO.getAddList().size() == 0 && relaDTO.getDeleteList().size() == 0) {
+            return 1;
+        }
         int rows = 0;
         RoleMenuMapper roleMenuMapper = new RoleMenuMapper();
-
-        // 查询该角色之前拥有的所有菜单lastMenuId
-        List<Menu> menus = MenuService.getInstance().query(roleId);
-        Set<Long> lastMenuId = new HashSet<>();
-        menus.forEach((menu) -> {
-            lastMenuId.add(menu.getId());
-        });
-
-        // lastMenuId - menuId, 进行删除操作
-        Collection deleteIdCollection = CollectionUtils.subtract(lastMenuId, menuId);
-        if (deleteIdCollection.size() > 0) {
-            List<Long> deleteId = new ArrayList<>(deleteIdCollection);
-            rows += roleMenuMapper.delete(roleId, deleteId);
-        }
-
-        // menuId - lastMenuId, 进行新增操作
-        Collection addIdCollection = CollectionUtils.subtract(menuId, lastMenuId);
-        if (addIdCollection.size() > 0) {
-            List<Long> addId = new ArrayList<>(addIdCollection);
-            rows += roleMenuMapper.add(roleId, addId);
-        }
-
-        return addIdCollection.size() == 0 && deleteIdCollection.size() == 0 ? 1 : rows;
+        // 进行删除操作
+        rows += roleMenuMapper.deleteByList(relaDTO.getId(), relaDTO.getDeleteList());
+        // 进行新增操作
+        rows += roleMenuMapper.add(relaDTO.getId(), relaDTO.getAddList());
+        return rows;
     }
 
     /**
@@ -142,10 +124,14 @@ public class RoleService {
      * @param id
      * @return
      */
-    // TODO 现有一下两种处理方式, 待定
-    //  1. 如果该角色还有用户, 则无法删除
-    //  2. 如果该角色还有用户, 同时将用户_角色表的数据一起删除
+    @Transactional(rollbackFor = Exception.class)
     public int delete(List<Long> id) {
+        // 删除用户_角色关联表
+        UserRoleMapper userRoleMapper = new UserRoleMapper();
+        userRoleMapper.deleteByRoleId(id);
+        // 删除角色_菜单关联表
+        RoleMenuMapper roleMenuMapper = new RoleMenuMapper();
+        roleMenuMapper.deleteByRoleId(id);
         return roleMapper.delete(id);
     }
 }

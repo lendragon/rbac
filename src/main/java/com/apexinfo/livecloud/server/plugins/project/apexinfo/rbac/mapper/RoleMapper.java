@@ -5,9 +5,10 @@ import com.apex.util.ApexRowSet;
 import com.apexinfo.livecloud.server.core.GeneralMapper;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.common.SQLCommon;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant.RoleConstants;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.PageDTO;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.Role;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.User;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -29,18 +30,29 @@ public class RoleMapper extends GeneralMapper {
      * @param keyword
      * @return
      */
-    public List<Role> query(Long pageNo, Long pageSize, String keyword) {
+    public PageDTO<Role> query(Integer pageNo, Integer pageSize, String keyword) {
+        PageDTO<Role> pageDTO = new PageDTO<>();
         List<Role> roles = new ArrayList<>();
+        pageDTO.setRecords(roles);
+        pageDTO.setPageNo(pageNo);
+        pageDTO.setPageSize(pageSize);
+        ApexDao dao = null;
+        ApexRowSet rs = null;
         try {
-            StringBuffer sql = new StringBuffer("select ID, FName, FCreateTime, FUpdateTime, " +
-                    "FDescription from CT_Rbac_Role where 1 = 1 ");
+            StringBuilder sql = new StringBuilder();
+            sql.append("select ID, FName, FCreateTime, FUpdateTime, FDescription ");
+            sql.append("from CT_Rbac_Role where 1 = 1 ");
             // 拼接模糊查询SQL
             if (keyword != null && !keyword.isEmpty()) {
-                SQLCommon.likeContact(sql, keyword, "FName", "FDescription");
+                SQLCommon.likeContact(sql, "FName", "FDescription");
             }
-            // 分页查询
-            ApexRowSet rs = ApexDao.getRowSet(getDataSource(), sql.toString(),
-                    Math.toIntExact(pageNo), Math.toIntExact(pageSize));
+            dao = new ApexDao();
+            dao.prepareStatement(sql.toString());
+            if (keyword != null && !keyword.isEmpty()) {
+                SQLCommon.setLikeSQL(dao, keyword, 1, 2);
+            }
+            rs = dao.getRowSet(getDataSource(), pageNo, pageSize, null);
+            pageDTO.setTotal(rs.getCount());
             while (rs.next()) {
                 Role role = new Role();
                 role.setId(rs.getLong("ID"));
@@ -52,8 +64,12 @@ public class RoleMapper extends GeneralMapper {
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            logger.debug(e.getMessage(), e);
+            logger.error(e.getMessage(), e);
+        } finally {
+            closeResource(dao, rs);
         }
-        return roles;
+        return pageDTO;
     }
 
     /**
@@ -62,17 +78,23 @@ public class RoleMapper extends GeneralMapper {
      * @param userId
      * @return
      */
-    public List<Role> queryByUserId(long userId) {
+    public PageDTO<Role> queryByUserId(Long userId) {
+        PageDTO<Role> pageDTO = new PageDTO<>();
         List<Role> roles = new ArrayList<>();
+        pageDTO.setRecords(roles);
+        ApexDao dao = null;
+        ApexRowSet rs = null;
         try {
-            String sql = "select ID, FName, FCreateTime, FUpdateTime, FDescription " +
-                    "from CT_Rbac_Role where ID in " +
-                    "(select FRoleId from CT_Rbac_User_Role where FUserId = ?)";
+            StringBuilder sql = new StringBuilder();
+            sql.append("select ID, FName, FCreateTime, FUpdateTime, FDescription ");
+            sql.append("from CT_Rbac_Role where ID in ");
+            sql.append("(select FRoleId from CT_Rbac_User_Role where FUserId = ?)");
 
-            ApexDao dao = new ApexDao();
-            dao.prepareStatement(sql);
+            dao = new ApexDao();
+            dao.prepareStatement(sql.toString());
             dao.setLong(1, userId);
-            ApexRowSet rs = dao.getRowSet(getDataSource());
+            rs = dao.getRowSet(getDataSource());
+            pageDTO.setTotal(rs.getCount());
             while (rs.next()) {
                 Role role = new Role();
                 role.setId(rs.getLong("ID"));
@@ -84,26 +106,37 @@ public class RoleMapper extends GeneralMapper {
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            logger.debug(e.getMessage(), e);
+            logger.error(e.getMessage(), e);
+        } finally {
+            closeResource(dao, rs);
         }
-        return roles;
+        return pageDTO;
     }
 
     /**
      * 根据角色id查询角色
      *
+     * @param id
      * @return
      */
-    public List<Role> queryById(Long id) {
+    public PageDTO<Role> queryById(Long id) {
+        PageDTO<Role> pageDTO = new PageDTO<>();
         List<Role> roles = new ArrayList<>();
+        pageDTO.setRecords(roles);
+        ApexDao dao = null;
+        ApexRowSet rs = null;
         try {
-            String sql = "select ID, FName, FDescription, FCreateTime, FUpdateTime " +
-                    "from CT_Rbac_Role where ID = ? ";
-            ApexDao dao = new ApexDao();
-            dao.prepareStatement(sql);
-            dao.setLong(1, id);
-            ApexRowSet rs = dao.getRowSet(getDataSource());
+            StringBuilder sql = new StringBuilder();
+            sql.append("select ID, FName, FDescription, FCreateTime, FUpdateTime ");
+            sql.append("from CT_Rbac_Role where ID = ? ");
 
-            while (rs != null && rs.next()) {
+            dao = new ApexDao();
+            dao.prepareStatement(sql.toString());
+            dao.setLong(1, id);
+            rs = dao.getRowSet(getDataSource());
+            pageDTO.setTotal(rs.getCount());
+            while (rs.next()) {
                 Role role = new Role();
                 role.setId(rs.getLong("ID"));
                 role.setName(rs.getString("FName"));
@@ -114,8 +147,12 @@ public class RoleMapper extends GeneralMapper {
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            logger.debug(e.getMessage(), e);
+            logger.error(e.getMessage(), e);
+        } finally {
+            closeResource(dao, rs);
         }
-        return roles;
+        return pageDTO;
     }
 
     /**
@@ -126,14 +163,16 @@ public class RoleMapper extends GeneralMapper {
      */
     public int add(Role role) {
         int rows = 0;
+        ApexDao dao = null;
         try {
             long nextId = getNextID(RoleConstants.STUDIO_RBAC_ROLE);
             role.setId(nextId);
+            StringBuilder sql = new StringBuilder();
+            sql.append("insert into CT_Rbac_Role(ID, FName, FCreateTime, FUpdateTime, FDescription) ");
+            sql.append("values(?, ?, ?, ?, ?)");
 
-            String sql = "insert into CT_Rbac_Role(ID, FName, FCreateTime, FUpdateTime, FDescription)" +
-                    " values(?, ?, ?, ?, ?)";
-            ApexDao dao = new ApexDao();
-            dao.prepareStatement(sql);
+            dao = new ApexDao();
+            dao.prepareStatement(sql.toString());
             dao.setLong(1, role.getId());
             dao.setString(2, role.getName());
             dao.setObject(3, role.getCreateTime());
@@ -143,6 +182,10 @@ public class RoleMapper extends GeneralMapper {
             rows = dao.executeUpdate(getDataSource());
         } catch (SQLException e) {
             e.printStackTrace();
+            logger.debug(e.getMessage(), e);
+            logger.error(e.getMessage(), e);
+        } finally {
+            closeResource(dao);
         }
 
         return rows;
@@ -156,12 +199,14 @@ public class RoleMapper extends GeneralMapper {
      */
     public int update(Role role) {
         int rows = 0;
+        ApexDao dao = null;
         try {
-            String sql = "update CT_Rbac_Role set FName = ?, FUpdateTime = ?, " +
-                    "FDescription = ?  where ID = ? ";
+            StringBuilder sql = new StringBuilder();
+            sql.append("update CT_Rbac_Role set FName = ?, FUpdateTime = ?, FDescription = ? ");
+            sql.append("where ID = ? ");
 
-            ApexDao dao = new ApexDao();
-            dao.prepareStatement(sql);
+            dao = new ApexDao();
+            dao.prepareStatement(sql.toString());
             dao.setString(1, role.getName());
             dao.setObject(2, role.getUpdateTime());
             dao.setString(3, role.getDescription());
@@ -170,6 +215,10 @@ public class RoleMapper extends GeneralMapper {
             rows = dao.executeUpdate(getDataSource());
         } catch (SQLException e) {
             e.printStackTrace();
+            logger.debug(e.getMessage(), e);
+            logger.error(e.getMessage(), e);
+        } finally {
+            closeResource(dao);
         }
         return rows;
     }
@@ -180,43 +229,29 @@ public class RoleMapper extends GeneralMapper {
      * @param id
      * @return
      */
-    // TODO 删除事务, 不需要的话可能要删掉
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public int delete(List<Long> id) {
         int rows = 0;
+        ApexDao dao = null;
         try {
-            String sql = "delete from CT_Rbac_Role where ID in " +
-                    SQLCommon.listToSQLList(id);
+            StringBuilder sql = new StringBuilder();
+            sql.append("delete from CT_Rbac_Role where ID in ");
+            sql.append(SQLCommon.listToSQLList(id));
 
-            rows = ApexDao.executeUpdate(getDataSource(), sql);
+            dao = new ApexDao();
+            dao.prepareStatement(sql.toString());
+            for (int i = 0; i < id.size(); i++) {
+                dao.setLong(i + 1, id.get(i));
+            }
+            rows = dao.executeUpdate(getDataSource());
         } catch (SQLException e) {
             e.printStackTrace();
+            logger.debug(e.getMessage(), e);
+            logger.error(e.getMessage(), e);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+        } finally {
+            closeResource(dao);
         }
-
         return rows;
     }
-
-    /**
-     * 获取数据库中数据的数量
-     *
-     * @return
-     */
-    public int count(String keyword) {
-        int count = 0;
-        try {
-            StringBuffer sql = new StringBuffer("select count(*) from CT_Rbac_Role where 1 = 1 ");
-            if (keyword != null && !keyword.isEmpty()) {
-                SQLCommon.likeContact(sql, keyword, "FName", "FDescription");
-            }
-            ApexRowSet rs = ApexDao.getRowSet(getDataSource(), sql.toString());
-            if (rs.next()) {
-                count = rs.getInt(1);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return count;
-    }
-
-
 }

@@ -2,20 +2,17 @@ package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.controller;
 
 import com.apexinfo.livecloud.server.common.exporter.Response;
 import com.apexinfo.livecloud.server.core.web.AbstractController;
-import com.apexinfo.livecloud.server.plugins.product.sql.query.util.MD5Tools;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant.CommonConstants;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant.UserConstants;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.PageDTO;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.RelaDTO;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.User;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.UserDTO;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.service.UserService;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.util.AesDecryptor;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
-import java.util.Set;
 
 /**
  * @ClassName: UserController
@@ -38,11 +35,15 @@ public class UserController extends AbstractController {
      * @return
      */
     @RequestMapping(value = UserConstants.ROUTE_USER,
-            params = "action=query", method = RequestMethod.GET)
+            params = CommonConstants.ACTION_QUERY, method = RequestMethod.GET)
     @ResponseBody
-    public Response query(Long pageNo, Long pageSize, String keyword, Long id,
+    public Response query(Integer pageNo, Integer pageSize, String keyword, Long id,
                           HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
+        if (pageNo != null && pageNo < 1 || pageSize != null && pageSize < 0 ||
+                id != null && id <= 0) {
+            return Response.ofFail(CommonConstants.DATA_ERROR);
+        }
 
         PageDTO<User> pageDTO = UserService.getInstance().query(pageNo, pageSize, keyword, id);
         return Response.ofSuccess(pageDTO);
@@ -51,97 +52,75 @@ public class UserController extends AbstractController {
     /**
      * 新增用户
      *
-     * @param userDTO
+     * @param user
      * @param request
      * @param response
      * @return
      */
     @RequestMapping(value = UserConstants.ROUTE_USER,
-            params = "action=add", method = RequestMethod.POST)
+            params = CommonConstants.ACTION_ADD, method = RequestMethod.POST)
     @ResponseBody
-    public Response add(@RequestBody UserDTO userDTO,
+    public Response add(@RequestBody User user,
                         HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
-        String iv = userDTO.getIv();
-        User user = userDTO.getUser();
-
-        String password = null;
-        // 验证合法性
-        try {
-            // 对传输过来的密码进行aes解密并再使用md5加密得到加密后的密码
-            password = new MD5Tools().stringToMD5(
-                    AesDecryptor.aesDecrypt(user.getPassword(), UserConstants.AES_KEY, iv));
-        } catch (Exception e) {
-            return Response.ofFail("数据异常, 请重新提交");
+        if (user == null || user.getPassword() == null ||
+                user.getName() == null || user.getNo() == null) {
+            return Response.ofFail(CommonConstants.DATA_ERROR);
         }
-
-        user.setPassword(password);
         int rows = UserService.getInstance().add(user);
         if (rows == 1) {
-            return Response.ofSuccess("新增成功", null);
+            return Response.ofSuccess(CommonConstants.ADD_SUCCESS, null);
         }
-        return Response.ofFail("新增失败");
+        return Response.ofFail(CommonConstants.ADD_FAIL);
     }
 
     /**
      * 修改用户
      *
-     * @param userDTO
+     * @param user
      * @param request
      * @param response
      * @return
      */
     @RequestMapping(value = UserConstants.ROUTE_USER,
-            params = "action=update", method = RequestMethod.POST)
+            params = CommonConstants.ACTION_UPDATE, method = RequestMethod.POST)
     @ResponseBody
-    public Response update(@RequestBody UserDTO userDTO,
+    public Response update(@RequestBody User user,
                            HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
-
-        String iv = userDTO.getIv();
-        User user = userDTO.getUser();
-
-        String password = null;
-        // 验证合法性
-        try {
-            // 对传输过来的密码进行aes解密并再使用md5加密得到加密后的密码
-            password = new MD5Tools().stringToMD5(
-                    AesDecryptor.aesDecrypt(user.getPassword(), UserConstants.AES_KEY, iv));
-        } catch (Exception e) {
-            return Response.ofFail("数据异常, 请重新提交");
+        if (user == null || user.getId() == null || user.getId() <= 0 ||
+                user.getName() == null || user.getNo() == null) {
+            return Response.ofFail(CommonConstants.DATA_ERROR);
         }
-
         int rows = UserService.getInstance().update(user);
         if (rows == 1) {
-            return Response.ofSuccess("修改成功", null);
+            return Response.ofSuccess(CommonConstants.UPDATE_SUCCESS, null);
         }
-        return Response.ofFail("修改失败");
+        return Response.ofFail(CommonConstants.UPDATE_FAIL);
     }
-
 
     /**
      * 修改用户的角色
      *
-     * @param userId
-     * @param roleId
+     * @param relaDTO
      * @param request
      * @param response
      * @return
      */
-    // TODO 可能要修改成前端发送要添加的列表和要删除的列表后再添加和删除
     @RequestMapping(value = UserConstants.ROUTE_USER_ROLE,
-            params = "action=update", method = RequestMethod.POST)
+            params = CommonConstants.ACTION_UPDATE, method = RequestMethod.POST)
     @ResponseBody
-    public Response updateUserRoles(@RequestParam Long userId, @RequestParam Set<Long> roleId,
+    public Response updateUserRoles(@RequestBody RelaDTO relaDTO,
                                     HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
-
-        int rows = UserService.getInstance().updateUserRoles(userId, roleId);
-
-        if (rows > 0) {
-            return Response.ofSuccess("修改成功", null);
+        if (relaDTO == null || relaDTO.getId() == null || relaDTO.getId() <= 0) {
+            return Response.ofFail(CommonConstants.DATA_ERROR);
         }
-        return Response.ofFail("修改失败");
+        int rows = UserService.getInstance().updateUserRoles(relaDTO);
+        if (rows > 0) {
+            return Response.ofSuccess(CommonConstants.UPDATE_SUCCESS, null);
+        }
+        return Response.ofFail(CommonConstants.UPDATE_FAIL);
     }
 
     /**
@@ -153,16 +132,17 @@ public class UserController extends AbstractController {
      * @return
      */
     @RequestMapping(value = UserConstants.ROUTE_USER,
-            params = "action=delete", method = RequestMethod.POST)
+            params = CommonConstants.ACTION_DELETE, method = RequestMethod.POST)
     @ResponseBody
     public Response delete(@RequestParam List<Long> id, HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
-
+        if (id == null) {
+            return Response.ofFail(CommonConstants.DATA_ERROR);
+        }
         int rows = UserService.getInstance().delete(id);
         if (rows > 0) {
-            return Response.ofSuccess("删除成功", null);
+            return Response.ofSuccess(CommonConstants.DELETE_SUCCESS, null);
         }
-        return Response.ofFail("删除失败");
+        return Response.ofFail(CommonConstants.DELETE_FAIL);
     }
-
 }

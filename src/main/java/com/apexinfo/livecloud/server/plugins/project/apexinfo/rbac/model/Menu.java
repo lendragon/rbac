@@ -1,8 +1,5 @@
 package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model;
 
-import com.apexinfo.livecloud.server.common.annotation.Column;
-import com.apexinfo.livecloud.server.common.annotation.Table;
-
 import java.util.Date;
 
 /**
@@ -13,20 +10,39 @@ import java.util.Date;
  * @Version 1.0
  */
 public class Menu {
+    // 菜单标识
     private Long id;
+    // 菜单名称
     private String name;
+    // 菜单显示顺序
     private Long order;
+    // 菜单层级
     private Long level;
-
+    // 父菜单ID
     private Long parentId;
-
+    // 菜单路径
     private String url;
-
+    // 创建时间
     private Date createTime;
-
+    // 修改时间
     private Date updateTime;
-
+    // 菜单描述
     private String description;
+
+    public Menu() {
+    }
+
+    public Menu(Long id, String name, Long order, Long level, Long parentId, String url, Date createTime, Date updateTime, String description) {
+        this.id = id;
+        this.name = name;
+        this.order = order;
+        this.level = level;
+        this.parentId = parentId;
+        this.url = url;
+        this.createTime = createTime;
+        this.updateTime = updateTime;
+        this.description = description;
+    }
 
     public Long getId() {
         return id;

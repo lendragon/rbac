@@ -8,5 +8,8 @@ package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant;
  * @Version 1.0
  */
 public class UserRoleConstants {
+    /**
+     * 用户角色关联表名
+     */
     public static final String STUDIO_RBAC_USER_ROLE = "CT_Rbac_User_Role";
 }

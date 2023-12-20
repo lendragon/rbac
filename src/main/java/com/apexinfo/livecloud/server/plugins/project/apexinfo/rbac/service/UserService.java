@@ -4,11 +4,10 @@ import com.apexinfo.livecloud.server.plugins.product.mobile.extend.DemoService;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.UserMapper;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.UserRoleMapper;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.PageDTO;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.Role;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.RelaDTO;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.User;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.log4j.Logger;
-
+import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 
 /**
@@ -38,40 +37,34 @@ public class UserService {
 
     /**
      * 分页查询/模糊查询所有用户 / 根据用户id查询用户
+     *
      * @param pageNo
      * @param pageSize
      * @param keyword
      * @param id
      * @return
      */
-    public PageDTO<User> query(Long pageNo, Long pageSize, String keyword, Long id) {
-        PageDTO<User> pageDTO = new PageDTO<>();
-        List<User> users = null;
-        int count = 0;
+    public PageDTO<User> query(Integer pageNo, Integer pageSize, String keyword, Long id) {
+        PageDTO<User> pageDTO = null;
         if (id == null) {
             if (pageNo == null) {
-                pageNo = 1L;
+                pageNo = 1;
             }
             if (pageSize == null) {
-                pageSize = 20L;
+                pageSize = 20;
             }
-            users =  userMapper.query(pageNo, pageSize, keyword);
-            count = userMapper.count(keyword);
-            pageDTO.setPageSize(Math.toIntExact(pageSize));
+            pageDTO = userMapper.query(pageNo, pageSize, keyword);
         } else {
-            users = userMapper.queryById(id);
-            count = users.size();
-            pageDTO.setPageSize(count);
+            pageDTO = userMapper.queryById(id);
+            pageDTO.setPageNo(1);
+            pageDTO.setPageSize(1);
         }
-        pageDTO.setRecords(users);
-        pageDTO.setTotal(count);
-
         return pageDTO;
     }
 
-
     /**
      * 新增用户
+     *
      * @param user
      * @return
      */
@@ -85,6 +78,7 @@ public class UserService {
 
     /**
      * 修改用户
+     *
      * @param user
      * @return
      */
@@ -97,47 +91,34 @@ public class UserService {
 
     /**
      * 修改用户的角色
-     * @param userId
-     * @param roleId
+     *
+     * @param relaDTO
      * @return
      */
-    public int updateUserRoles(Long userId, Set<Long> roleId) {
+    @Transactional(rollbackFor = Exception.class)
+    public int updateUserRoles(RelaDTO relaDTO) {
+        if (relaDTO.getAddList().size() == 0 && relaDTO.getDeleteList().size() == 0) {
+            return 1;
+        }
         int rows = 0;
         UserRoleMapper userRoleMapper = new UserRoleMapper();
-
-        // 查询该用户之前拥有的所有角色lastRoleId
-        List<Role> roles = RoleService.getInstance().query(null, null, null, userId, null).getRecords();
-        Set<Long> lastRoleId = new HashSet<>();
-        roles.forEach((role) -> {
-            lastRoleId.add(role.getId());
-        });
-
-        // lastRoleId - roleId, 进行删除操作
-        Collection deleteIdCollection = CollectionUtils.subtract(lastRoleId, roleId);
-        if (deleteIdCollection.size() > 0) {
-            List<Long> deleteId = new ArrayList<>(deleteIdCollection);
-            rows += userRoleMapper.delete(userId, deleteId);
-        }
-
-        // roleId - lastRoleId, 进行新增操作
-        Collection addIdCollection = CollectionUtils.subtract(roleId, lastRoleId);
-        if (addIdCollection.size() > 0) {
-            List<Long> addId = new ArrayList<>(addIdCollection);
-            rows += userRoleMapper.add(userId, addId);
-        }
-
-        return addIdCollection.size() == 0 && deleteIdCollection.size() == 0 ? 1 : rows;
+        // 进行删除操作
+        rows += userRoleMapper.deleteByIdList(relaDTO.getId(), relaDTO.getDeleteList());
+        // 进行新增操作
+        rows += userRoleMapper.add(relaDTO.getId(), relaDTO.getAddList());
+        return rows;
     }
 
     /**
      * 删除用户
+     *
      * @param id
      * @return
      */
-    // TODO 同时还要删除用户_角色表中的用户
+    @Transactional(rollbackFor = Exception.class)
     public int delete(List<Long> id) {
+        UserRoleMapper userRoleMapper = new UserRoleMapper();
+        userRoleMapper.deleteByUserId(id);
         return userMapper.delete(id);
     }
-
-
 }

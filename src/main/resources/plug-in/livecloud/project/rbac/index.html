@@ -4,6 +4,7 @@
     <title>test</title>
     <link rel="stylesheet" href="css/bootstrap.min.css" />
     <link rel="stylesheet" href="css/bootstrap-datetimepicker.min.css" />
+    <link rel="stylesheet" href="css/bootstrap-treeview.min.css" />
     <link rel="stylesheet" href="css/common.css" />
 
     <script src="js/jquery-3.3.1.min.js"></script>
@@ -11,6 +12,7 @@
     <script src="js/bootstrap-datetimepicker.min.js"></script>
     <script src="js/bootstrap-datetimepicker.zh-CN.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="js/bootstrap-treeview.min.js"></script>
     <script src="js/common.js"></script>
     <script src="js/ui.js"></script>
   </head>
@@ -60,7 +62,67 @@
         "${pageContext.request.contextPath}/livecloud/project/roleMenu.pagex";
       const ROUTE_MENU =
         "${pageContext.request.contextPath}/livecloud/project/menu.pagex";
+      let addList;
+      let deleteList;
       $(() => {
+        roles = [
+          {
+            id: 1,
+            name: "超级管理员",
+            createTime: 1702396800000,
+            updateTime: 1702396800000,
+            description: "拥有所有权限的超级管理员",
+          },
+          {
+            id: 2,
+            name: "普通用户",
+            createTime: 1702396800000,
+            updateTime: 1702546023000,
+            description:
+              "普通用户角色，拥有基本的系统访问权限，可以使用系统提供的功能进行操作。",
+          },
+          {
+            id: 3,
+            name: "管理员",
+            createTime: 1702545742000,
+            updateTime: 1702545742000,
+            description: "普通管理员",
+          },
+          {
+            id: 4,
+            name: "客户服务",
+            createTime: 1702545820000,
+            updateTime: 1702545820000,
+            description:
+              "负责处理客户的咨询、投诉和售后服务工作，具有客户信息查看和部分客户数据修改权限",
+          },
+        ];
+        userRoles = [
+          {
+            id: 2,
+            name: "普通用户",
+            createTime: 1702396800000,
+            updateTime: 1702546023000,
+            description:
+              "普通用户角色，拥有基本的系统访问权限，可以使用系统提供的功能进行操作。",
+          },
+          {
+            id: 3,
+            name: "管理员",
+            createTime: 1702545742000,
+            updateTime: 1702545742000,
+            description: "普通管理员",
+          },
+        ];
+        let userRolesId = $.map(userRoles, function (r) {
+          return r.id;
+        });
+        console.log(userRolesId);
+        roles.forEach((role) => {
+          let b = $.inArray(role.id, userRolesId);
+          console.log(b);
+        });
+
         // 根据地址栏的参数page, 值为user、role、menu来展示不同的页面， 没有填写时自动加上user
         let page = getURLParam("page");
         page = page === null || page === "" ? "user" : page;

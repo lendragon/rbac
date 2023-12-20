@@ -278,7 +278,7 @@
       },
     ];
 
-    createTable("#userData", changeJsonToArr(data));
+    createTable("#userData", "user", changeJsonToArr(data));
   });
 
   function changeJsonToArr(data) {
@@ -411,6 +411,118 @@
     );
   }
 
+  // 查看用户角色
+  function userRoleDetail(userId) {
+    createFormBox(
+      "userRoleDetail",
+      "用户关联角色",
+      [
+        {
+          label: "ID",
+          type: "text",
+          name: "id",
+          required: true,
+          disabled: true,
+          value: 1,
+        },
+        {
+          label: "用户编号",
+          type: "text",
+          name: "no",
+          required: true,
+          placeholder: "用户编号",
+          reg: "^[0-9]{3}$",
+          regTitle: "请输入3位数字",
+        },
+        {
+          label: "用户名",
+          type: "text",
+          name: "name",
+          required: true,
+          placeholder: "用户名",
+          reg: "^.{2,12}$",
+          regTitle: "请输入2-12位的字符",
+        },
+        {
+          label: "密码",
+          type: "password",
+          name: "password",
+          required: true,
+          placeholder: "密码",
+          reg: "^[^\u4e00-\u9fa5]{4,16}$",
+          regTitle: "请输入4-16位的数字、字母或特殊字符",
+        },
+        {
+          label: "性别",
+          type: "radio",
+          name: "sex",
+          required: false,
+          options: [
+            {
+              name: "无",
+              value: "",
+              checked: true,
+            },
+            {
+              name: "男",
+              value: "1",
+            },
+            {
+              name: "女",
+              value: "2",
+            },
+          ],
+          placeholder: "性别",
+        },
+        {
+          label: "出生日期",
+          type: "date",
+          name: "birthDay",
+          required: false,
+          placeholder: "出生日期",
+          value: formatDate(0, false),
+        },
+        {
+          label: "电话",
+          type: "text",
+          name: "phoneNum",
+          required: false,
+          placeholder: "电话",
+          reg: "^$|^[0-9]{7,15}$",
+          regTitle: "请输入有效电话号码",
+        },
+        {
+          label: "创建时间",
+          type: "date",
+          name: "createTime",
+          required: false,
+          disabled: true,
+          value: formatDate(new Date(1702396800000), false),
+        },
+        {
+          label: "修改时间",
+          type: "date",
+          name: "updateTime",
+          required: false,
+          disabled: true,
+        },
+      ],
+      1,
+      (data, closeFun) => {
+        confirmBox("提示", "确定修改吗?", 0, true, true, () => {
+          console.log(data);
+          closeFun();
+        });
+      },
+      "修改"
+    );
+  }
+
+  // 查看用户菜单
+  function userMenuDetail(userId) {
+    
+  }
+
   // 删除用户
   function deleteUsers(usersId) {
     confirmBox("提示", "确定删除?", 1, true, true, () => {
@@ -431,10 +543,6 @@
 </script>
 
 <script>
-  /* 表格多选框 */
-  // 全选/取消全选
-  // tableCheckBoxAll();
-  // $("#select-all").prop("checked", false);
   tableCheckBoxEvent();
 </script>
 

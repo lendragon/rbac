@@ -88,3 +88,8 @@
 .margin-5 {
   margin: 5px;
 }
+.btn-group-box {
+  position: fixed;
+  right: 10px;
+  bottom: 10px;
+}

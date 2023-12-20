@@ -10,11 +10,27 @@ import java.util.Date;
  * @Version 1.0
  */
 public class Role {
+    // 角色标识
     private Long id;
+    // 角色名称
     private String name;
+    // 创建时间
     private Date createTime;
+    // 修改时间
     private Date updateTime;
+    // 角色描述
     private String description;
+
+    public Role() {
+    }
+
+    public Role(Long id, String name, Date createTime, Date updateTime, String description) {
+        this.id = id;
+        this.name = name;
+        this.createTime = createTime;
+        this.updateTime = updateTime;
+        this.description = description;
+    }
 
     public Long getId() {
         return id;

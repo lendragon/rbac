@@ -245,23 +245,192 @@
     );
   }
 
+  // 查看用户角色
+  function userRoleDetail(userId) {
+    // 获取用户对应的角色
+    $.get(
+      ROUTE_ROLE + "?action=query",
+      "userId=" + userId,
+      (res) => {
+        if (!res.success) {
+          failMessageFloat(res.msg);
+          return;
+        }
+        let userRoles = res.data.records;
+        // 查询所有角色
+        $.get(
+          ROUTE_ROLE + "?action=query",
+          (res) => {
+            if (!res.success) {
+              failMessageFloat(res.msg);
+              return;
+            }
+            let roles = res.data.records;
+            // 展示模态框
+            userRoleDetailFormBox(userId, userRoles, roles);
+          },
+          "json"
+        );
+      },
+      "json"
+    );
+  }
+
+  function userRoleDetailFormBox(userId, userRoles, roles) {
+    let options = [];
+    roles.forEach((role) => {
+      options.push({
+        name: role.name,
+        value: role.id,
+        checked:
+          $.inArray(
+            role.id,
+            $.map(userRoles, function (r) {
+              return r.id;
+            })
+          ) !== -1,
+      });
+    });
+    // 用户数据格式
+    let userRoleFormData = [
+      {
+        label: "角色",
+        type: "checkbox",
+        name: "role",
+        required: false,
+        options: options,
+        placeholder: "角色",
+      },
+    ];
+
+    let deleteList = []; // 要删除的列表
+    let addList = []; // 要添加的列表
+
+    // 创建表单模态框
+    createFormBox(
+      "userRoleDetail",
+      "用户关联角色",
+      userRoleFormData,
+      1,
+      (data, closeFun) => {
+        confirmBox("提示", "确定修改吗?", 0, true, true, () => {
+          updateUserRole(userId, addList, deleteList);
+          closeFun();
+        });
+      },
+      "修改",
+      () => {
+        checkBoxEvent(addList, deleteList);
+      }
+    );
+  }
+
+  // 为多选框绑定事件
+  function checkBoxEvent(addList, deleteList) {
+    $("#userRoleDetail input[type='checkbox']").click(function () {
+      let id = $(this).val();
+      if ($(this).is(":checked")) {
+        // 多选框被勾选
+        if ($.inArray(id, deleteList) !== -1) {
+          // 如果deleteList中已经有该id，则从deleteList中删除
+          deleteList = $.grep(deleteList, function (value) {
+            return value != id;
+          });
+        } else {
+          // 否则，将该id添加到addList中
+          addList.push(id);
+        }
+      } else {
+        // 多选框被取消勾选
+        if ($.inArray(id, addList) !== -1) {
+          // 如果addList中已经有该id，则从addList中删除
+          addList = $.grep(addList, function (value) {
+            return value != id;
+          });
+        } else {
+          // 否则，将该id添加到deleteList中
+          deleteList.push(id);
+        }
+      }
+    });
+  }
+
+  // 修改用户角色关联
+  function updateUserRole(userId, addList, deleteList) {
+    let data = {};
+    data.id = userId;
+    data.addList = addList;
+    data.deleteList = deleteList;
+    $.ajax({
+      url: ROUTE_USER_ROLE + "?action=update",
+      type: "POST",
+      contentType: "application/json",
+      data: JSON.stringify(data),
+      success: function (res) {
+        // 请求成功后的回调函数
+        if (!res.success) {
+          failMessageFloat(res.msg);
+          return;
+        }
+        successMessageFloat(res.msg);
+      },
+    });
+  }
+
+  // 查看用户菜单
+  function userMenuDetail(userId) {
+    $.get(ROUTE_MENU + "?action=query", "userId=" + userId, (res) => {
+      if (!res.success) {
+        failMessageFloat(res.msg);
+        return;
+      }
+      userMenuDetailBox(res.data);
+    });
+  }
+
+  function menuDetail(menuId) {
+    $.get(ROUTE_MENU + "?action=query", "menuId=" + menuId, (res) => {
+      if (!res.success) {
+        failMessageFloat(res.msg);
+        return;
+      }
+      menu = res.data[0].menu;
+      menuDetailFormBox(menu, true);
+    });
+  }
+
+  // 查看用户相关菜单模态框
+  function userMenuDetailBox(menu) {
+    createTreeBox(
+      "menuTree",
+      "用户菜单",
+      menu,
+      true,
+      false,
+      true,
+      false,
+      false
+    );
+  }
+
   // 修改用户
   function updateUser(data) {
-    let password = data.password;
-
-    // 密码加密
-    const iv = generateHex();
-    const encryptedPassword = aesEncrypt(password, AES_KEY, iv);
-    let requestData = {};
-    data.password = encryptedPassword;
-    requestData.user = data;
-    requestData.iv = iv;
+    let isPasswordChanged = $("#userDetail input[type='password']").data(
+      "isPasswordChanged"
+    );
+    console.log(isPasswordChanged);
+    if (isPasswordChanged) {
+      // 密码加密
+      data.password = CryptoJS.MD5(data.password).toString();
+    } else {
+      data.password = null;
+    }
 
     $.ajax({
       url: ROUTE_USER + "?action=update",
       type: "POST",
       contentType: "application/json",
-      data: JSON.stringify(requestData),
+      data: JSON.stringify(data),
       success: function (res) {
         // 请求成功后的回调函数
         if (!res.success) {
@@ -315,20 +484,22 @@
 
   // 新增用户
   function addUser(data) {
-    let password = data.password;
+    let isPasswordChanged = $("#addUser input[type='password']").data(
+      "isPasswordChanged"
+    );
+    console.log(isPasswordChanged);
+    if (isPasswordChanged) {
+      // 密码加密
+      data.password = CryptoJS.MD5(data.password).toString();
+    } else {
+      data.password = null;
+    }
 
-    // 密码加密
-    const iv = generateHex();
-    const encryptedPassword = aesEncrypt(password, AES_KEY, iv);
-    let requestData = {};
-    data.password = encryptedPassword;
-    requestData.user = data;
-    requestData.iv = iv;
     $.ajax({
       url: ROUTE_USER + "?action=add",
       type: "POST",
       contentType: "application/json",
-      data: JSON.stringify(requestData),
+      data: JSON.stringify(data),
       success: function (res) {
         // 请求成功后的回调函数
         if (!res.success) {

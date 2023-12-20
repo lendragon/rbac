@@ -1,10 +1,18 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<link rel="stylesheet" href="css/bootstrap-treeview.min.css" />
-<script src="js/bootstrap-treeview.min.js"></script>
-
 <!-- 上部按钮 -->
-<button id="addMenuBtn" class="btn btn-primary">新增</button>
-<button id="batchDeleteBtn" class="btn btn-danger" disabled>批量删除</button>
+<div class="row">
+  <div class="col-md-9">
+    <button id="addMenuBtn" class="btn btn-primary">新增</button>
+  </div>
+  <div class="col-md-3">
+    <form id="searchForm" class="form-inline" role="search">
+      <div class="form-group">
+        <input type="text" class="form-control" placeholder="请输入角色id" />
+      </div>
+      <button type="submit" class="btn btn-default">查询</button>
+    </form>
+  </div>
+</div>
 
 <div id="menuTree"></div>
 
@@ -12,13 +20,17 @@
   $(() => {
     queryMenus();
     $("#addMenuBtn").click(addMenuFormBox);
-    $("#batchDeleteBtn").click(batchDelete);
+    // 监听搜索框提交事件
+    searchFormEvent((pageNo, roleId) => {
+      queryMenus("roleId=" + roleId);
+    });
   });
 
   // 查询菜单树
-  function queryMenus() {
+  function queryMenus(params = "") {
     $.get(
       ROUTE_MENU + "?action=query",
+      params,
       (res) => {
         // 如果请求失败
         if (!res.success) {
@@ -28,7 +40,7 @@
         // 请求成功
         let menus = res.data;
         // 创建菜单树并展示
-        createTree("menuTree", menus);
+        createTree("menuTree", menus, true, false);
       },
       "json"
     );
@@ -44,104 +56,6 @@
       menu = res.data[0].menu;
       menuDetailFormBox(menu);
     });
-  }
-
-  function menuDetailFormBox(menu) {
-    createFormBox(
-      "menuDetail",
-      "菜单详情",
-      [
-        {
-          label: "ID",
-          type: "text",
-          name: "id",
-          required: true,
-          disabled: true,
-          value: menu.id,
-        },
-        {
-          label: "菜单名",
-          type: "text",
-          name: "name",
-          required: true,
-          placeholder: "菜单名",
-          reg: "^.{2,12}$",
-          regTitle: "请输入2-12位的字符",
-          value: menu.name,
-        },
-        {
-          label: "菜单显示顺序",
-          type: "number",
-          name: "order",
-          required: true,
-          placeholder: "菜单显示顺序",
-          reg: "^[1-9]\d*$",
-          regTitle: "请输入有效数字",
-          value: menu.order,
-        },
-        {
-          label: "菜单层级",
-          type: "number",
-          name: "level",
-          required: true,
-          reg: "^[1-9]\d*$",
-          regTitle: "请输入有效数字",
-          placeholder: "菜单层级",
-          value: menu.level,
-        },
-        {
-          label: "父菜单id",
-          type: "number",
-          name: "parentId",
-          required: false,
-          reg: "^[1-9]\d*$",
-          regTitle: "请输入有效数字",
-          placeholder: "父菜单id",
-          value: menu.parentId,
-        },
-        {
-          label: "菜单路径",
-          type: "text",
-          name: "url",
-          required: false,
-          placeholder: "菜单路径",
-          value: menu.url,
-        },
-        {
-          label: "菜单描述",
-          type: "textarea",
-          name: "description",
-          placeholder: "菜单描述",
-          required: false,
-          rows: 4,
-          value: menu.description
-        },
-        {
-          label: "创建时间",
-          type: "date",
-          name: "createTime",
-          required: false,
-          disabled: true,
-          value: formatDate(menu.createTime, false),
-        },
-        {
-          label: "修改时间",
-          type: "date",
-          name: "updateTime",
-          required: false,
-          disabled: true,
-          value: formatDate(menu.updateTime, false),
-        },
-      ],
-      1,
-      (data, closeFun) => {
-        confirmBox("提示", "确定修改吗?", 0, true, true, () => {
-          updateMenu(data);
-          closeFun();
-        });
-      },
-      "修改"
-    );
   }
 
   // 修改菜单
@@ -166,18 +80,6 @@
   // 删除菜单
   function deleteMenusBox(menusId) {
     confirmBox("提示", "确定删除?", -1, true, true, () => {
-      deleteMenus(menusId);
-    });
-  }
-
-  // 批量删除
-  function batchDelete() {
-    confirmBox("提示", "确定删除?", -1, true, true, () => {
-      let checked = $(".select-row:checked");
-      let menusId = [];
-      checked.each(function () {
-        menusId.push(parseInt($(this).parent().next().text()));
-      });
       deleteMenus(menusId);
     });
   }
@@ -258,7 +160,7 @@
           regTitle: "请输入有效数字",
           placeholder: "菜单层级",
           value: level,
-          disabled: !isEmpty(level)
+          disabled: !isEmpty(level),
         },
         {
           label: "父菜单id",
@@ -269,7 +171,7 @@
           regTitle: "请输入有效数字",
           placeholder: "父菜单id",
           value: parentId,
-          disabled: !isEmpty(level)
+          disabled: !isEmpty(level),
         },
         {
           label: "菜单路径",
@@ -285,7 +187,7 @@
           placeholder: "菜单描述",
           required: false,
           rows: 4,
-        }
+        },
       ],
       1,
       (data, closeFun) => {

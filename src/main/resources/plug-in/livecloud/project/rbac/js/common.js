@@ -92,32 +92,3 @@ function isEmpty(v) {
   return typeof (v) === "undefined" || v === null || v === "";
 }
 
-
-function aesEncrypt(data, key, iv) {
-  // 将密钥和向量转换为WordArray对象
-  const keyBytes = CryptoJS.enc.Utf8.parse(key);
-  const ivBytes = CryptoJS.enc.Utf8.parse(iv);
-
-  // 加密
-  const encrypted = CryptoJS.AES.encrypt(data, keyBytes, {
-    iv: ivBytes,
-    mode: CryptoJS.mode.CBC,
-    padding: CryptoJS.pad.Pkcs7,
-  });
-
-  // 返回加密后的数据，使用Base64编码
-  return encrypted.toString();
-}
-
-// 随机生成一个16位的16进制数
-function generateHex() {
-  let hex = '';
-  let characters = '0123456789ABCDEF';
-  
-  for (var i = 0; i < 16; i++) {
-    let randomIndex = Math.floor(Math.random() * characters.length);
-    hex += characters[randomIndex];
-  }
-  
-  return hex;
-}

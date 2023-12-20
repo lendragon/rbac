@@ -8,5 +8,8 @@ package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant;
  * @Version 1.0
  */
 public class RoleMenuConstants {
+    /**
+     * 角色菜单关联表名
+     */
     public static final String STUDIO_RBAC_ROLE_MENU = "CT_Rbac_Role_Menu";
 }

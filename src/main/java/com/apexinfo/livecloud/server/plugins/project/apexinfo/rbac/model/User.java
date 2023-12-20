@@ -1,9 +1,5 @@
 package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model;
 
-import com.apexinfo.livecloud.server.common.annotation.Column;
-import com.apexinfo.livecloud.server.common.annotation.Table;
-
-import java.io.Serializable;
 import java.util.Date;
 
 /**
@@ -14,14 +10,23 @@ import java.util.Date;
  * @Version 1.0
  */
 public class User {
+    // 用户标识
     private Long id;
+    // 用户编号
     private String no;
+    // 用户名
     private String name;
+    // 密码
     private String password;
+    // 性别
     private Long sex;
+    // 生日
     private Date birthDay;
+    // 手机号
     private String phoneNum;
+    // 创建时间
     private Date createTime;
+    // 修改时间
     private Date updateTime;
 
     public User() {

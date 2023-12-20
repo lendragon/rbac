@@ -29,7 +29,7 @@ function infoMessageFloat(message) {
 }
 
 /* ===== 确认框 ===== */
-function confirmBox(title, message, size, disConfirmBtn = true, disCancleBtn = true, confirmFun, cancleFun) {
+function confirmBox(title, message, size, disConfirmBtn = true, disCancleBtn = true, confirmFun, cancleFun, createdFun) {
   let confirmModal = document.createElement("div");
   confirmModal.className = "modal modal-vertical-center";
   confirmModal.innerHTML = `
@@ -52,11 +52,11 @@ function confirmBox(title, message, size, disConfirmBtn = true, disCancleBtn = t
 
 
   document.body.appendChild(confirmModal);
-  if (disConfirmBtn) {
+  if (disConfirmBtn && typeof (confirmFun) === "function") {
     let confirmBtn = confirmModal.querySelector(".modal-footer .btn-primary");
     confirmBtn.addEventListener("click", confirmFun);
   }
-  if (disCancleBtn) {
+  if (disCancleBtn && typeof (confirmFun) === "function") {
     let cancelBtn = confirmModal.querySelector(".modal-footer .btn-secondary");
     cancelBtn.addEventListener("click", cancleFun);
   }
@@ -66,6 +66,10 @@ function confirmBox(title, message, size, disConfirmBtn = true, disCancleBtn = t
   $(confirmModal).on("hidden.bs.modal", function () {
     document.body.removeChild(confirmModal);
   });
+
+  if (typeof createdFun === "function") {
+    createdFun();
+  }
   return confirmModal;
 }
 
@@ -153,9 +157,6 @@ function searchFormEvent(queryFun) {
     // 阻止表单的默认提交行为
     event.preventDefault();
 
-    // 获取表单数据
-    let formData = $(this).serialize();
-
     // 查询， 并展示
     if (typeof (queryFun) === "function") {
       keyword = $('#searchForm input[type="text"]').val();
@@ -201,36 +202,6 @@ function createPageBtn(total, disLastNext, queryFunName) {
   $("#lastPageBtn").click(lastTogglePageBtn);
 }
 
-// 分页组件点击切换
-// function togglePageBtn(event, object, queryFun) {
-//   let activeObject = $(".pageBtn.active");
-//   if (object['0'] === activeObject['0']) {
-//     return;
-//   }
-//   activeObject.removeClass("active");
-//   object.addClass("active");
-//   pageNo = object.text();
-//   if (typeof (queryFun) === "function") {
-//     queryFun(pageNo, keyword);
-//   }
-// }
-
-// // 下一个按钮点击事件
-// function nextTogglePageBtn() {
-//   if (pageNo >= $(".pageBtn").length) {
-//     return;
-//   }
-//   togglePageBtn(event, $(".pageBtn.active + .pageBtn"));
-// }
-
-// // 上一个按钮点击事件
-// function lastTogglePageBtn() {
-//   if (pageNo <= 1) {
-//     return;
-//   }
-//   togglePageBtn(event, $($(".pageBtn")[pageNo - 2]));
-// }
-
 function togglePageBtn(event, pageNoTmp, queryFun) {
   let activeObject = $(".pageBtn.active")[0];
   let object = $(".pageBtn")[pageNoTmp - 1];
@@ -242,7 +213,7 @@ function togglePageBtn(event, pageNoTmp, queryFun) {
   object.classList.add("active");
   pageNo = pageNoTmp;
   if (typeof (queryFun) === "function") {
-    queryFun(pageNo, keyword);
+    queryFun(pageNoTmp, keyword);
   }
 }
 
@@ -264,7 +235,7 @@ function lastTogglePageBtn() {
 
 
 /* ===== 自定义创建表单组件 ===== */
-function createFormBox(formId, title, formData, size, submitFun, btnName) {
+function createFormBox(formId, title, formData, size, submitFun, btnName, createdFun) {
   // 创建表单html
   let formHtml = createFormHtml(formId, formData, btnName);
   // 展示确认表单框
@@ -318,6 +289,7 @@ function createFormBox(formId, title, formData, size, submitFun, btnName) {
     disabledInput.removeAttr('disabled');
     let formData = $(this).serializeArray()
     disabledInput.prop('disabled', 'disabled');
+
     let jsonData = {};
     $.each(formData, function () {
       jsonData[this.name] = this.value === "" ? null : this.value;
@@ -332,6 +304,11 @@ function createFormBox(formId, title, formData, size, submitFun, btnName) {
   });
   // 绑定日期选择器
   dateChooseEvent(".date-choose-input");
+
+  // 表单创建完成后事件
+  if (typeof createdFun === "function") {
+    createdFun();
+  }
 }
 
 /**
@@ -369,12 +346,13 @@ function createFormHtml(formId, formArr, btnName = "确定") {
          ${isEmpty(elem.regTitle) ? "" : 'regTitle="' + elem.regTitle + '"'} 
          placeholder="${isEmpty(elem.placeholder) ? "" : elem.placeholder}" 
          ${elem.disabled ? "disabled" : ""} 
-         value="${isEmpty(elem.value) ? "" : elem.value}">`
+         value="${isEmpty(elem.value) ? "" : elem.value}" 
+         ${elem.type === "password" ? "oninput='passwordChanged(event, this, " + elem.value + ")'" : ""}>`
     } else if (elem.type === "checkbox" || elem.type === "radio") {
       elem.options.forEach((option) => {
         formHtml += `
           <label class="${elem.type}-inline">
-            <input type="${elem.type}" name="${elem.name}" value="" ${option.checked ? "checked" : ""}> ${option.name}
+            <input type="${elem.type}" name="${elem.name}" value="${option.value}" ${option.checked ? "checked" : ""}> ${option.name}
           </label>`
       })
     } else if (elem.type === "textarea") {
@@ -411,6 +389,17 @@ function createFormHtml(formId, formArr, btnName = "确定") {
   return formHtml;
 }
 
+function passwordChanged(event, object, originalPassword) {
+  let newPassword = $(object).val();
+
+  // 检查密码是否发生变化
+  // 检查密码是否发生变化
+  let isPasswordChanged = (newPassword !== originalPassword);
+
+  // 存储变化状态
+  $(object).data('isPasswordChanged', isPasswordChanged);
+}
+
 // 日期选择器绑定
 function dateChooseEvent(elemCss) {
   $(`${elemCss}`).datetimepicker({
@@ -426,62 +415,57 @@ function dateChooseEvent(elemCss) {
 
 
 /* ===== 自定义菜单树 ===== */
-function createTree(id, data) {
-  let treeData = convertToTreeData(data);
+function createTree(id, data, hasBtn = true, hasCheckBox = true, hasDetail = true, hasAdd = true, hasDelete = true, noneDataDis = "暂无菜单") {
+  if (data.length === 0) {
+    $(`#${id}`).text(noneDataDis);
+    return;
+  }
+  let treeData = convertToTreeData(data, hasBtn, hasCheckBox, hasDetail, hasAdd, hasDelete);
   $(`#${id}`).treeview({
     data: treeData,
-    // backColor: "green",    节点初始背景色
-    // selectedBackColor: "green"  // 节点被选中时的背景色
-    // selectedColor: "green"  // 节点被选中时的字体颜色
-    // onNodeSelected: function (event, node) {
-    //   console.log(node);
-    // },
-    // onNodeUnselected: function (event, node) {
-    //   console.log(node);
-    // }
-
-    // $(".btn-tree").click((event) => {
-    //   console.log(1);
-    //   event.stopPropagation();  // 阻止事件冒泡
-    // })
-    showCheckbox: true,
-    showTags: true,
-    // searchResultColor: "#000",
-    // searchResultBackColor: "#000",
-    // multiSelect : true
+    showCheckbox: hasCheckBox,
   });
 }
 
-function convertToTreeData(data) {
+function convertToTreeData(data, hasBtn, hasCheckBox = true, detailBtn = true, addBtn = true, deleteBtn = true) {
   return data.map((item) => ({
-    text: item.menu.name + `<span class="label label-info margin-5">${item.children.length}</span>` + treeBtnHtml(item.menu) + `<input type="hidden" value="${item.menu.id}">`,
-    nodes: item.children.length >= 1 ? convertToTreeData(item.children) : null,
+    text: (hasCheckBox ? `<input type="hidden" value="${item.menu.id}" parentId="${item.menu.parentId}">` : "") +
+      item.menu.name + `<span class="label label-info margin-5">${item.children.length}</span>` +
+      (hasBtn ? treeBtnHtml(item.menu, detailBtn, addBtn, deleteBtn) : ""),
+    nodes: item.children.length >= 1 ? convertToTreeData(item.children, hasBtn, hasCheckBox, detailBtn, addBtn, deleteBtn) : null,
+
   }));
 }
 
-function treeBtnHtml(elem) {
-  let treeBtn = `
-    <div class="btn-float-right">
+function treeBtnHtml(elem, detailBtn = true, addBtn = true, deleteBtn = true) {
+  let treeBtn = `<div class="btn-float-right">`;
+  if (detailBtn) {
+    treeBtn += `
       <button
         class="btn btn-info btn-sm btn-tree"
         onclick="event.stopPropagation(); menuDetail(${elem.id});"
       >
         <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
-      </button>
-
-      <button
+      </button>`;
+  }
+  if (addBtn) {
+    treeBtn += `<button
         class="btn btn-primary btn-sm btn-tree"
         onclick="event.stopPropagation(); addChild(${elem.level}, ${elem.id});"
       >
         <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
-      </button>
-      <button
-        class="btn btn-danger btn-sm btn-tree"
-        onclick="event.stopPropagation(); deleteMenusBox(${elem.id});"
-      >
-        <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
-      </button>
-    </div>`;
+      </button>`
+  }
+  if (deleteBtn) {
+    treeBtn += `<button
+      class="btn btn-danger btn-sm btn-tree"
+      onclick="event.stopPropagation(); deleteMenusBox(${elem.id});"
+    > 
+      <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
+      </button>`;
+  }
+  treeBtn += `</div>`;
+
   return treeBtn;
 }
 
@@ -489,7 +473,6 @@ function treeBtnHtml(elem) {
 function createTable(selector, menuName, data, hasBtn = true, btnDataIndex = 0) {
   let displayHtml = "";
   data.forEach((items) => {
-    // let keys = Object.keys(item);
     displayHtml +=
       `<tr>
         <td><input type="checkbox" class="select-row" /></td>
@@ -504,9 +487,34 @@ function createTable(selector, menuName, data, hasBtn = true, btnDataIndex = 0) 
             class="btn btn-link btn-no-underline btn-text-size"
             onclick="${menuName}Detail(${items[btnDataIndex]})"
           >
-            查看详情
+          详情
+          </button>`
+      if (menuName === "user") {
+        displayHtml +=
+          `<button
+            class="btn btn-link btn-no-underline btn-text-size"
+            onclick="userRoleDetail(${items[btnDataIndex]})"
+          >
+            角色
           </button>
           <button
+            class="btn btn-link btn-no-underline btn-text-size"
+            onclick="userMenuDetail(${items[btnDataIndex]})"
+          >
+            菜单
+          </button>`
+      } else if (menuName === "role") {
+        displayHtml +=
+          `<button
+            class="btn btn-link btn-no-underline btn-text-size"
+            onclick="roleMenuDetail(${items[btnDataIndex]})"
+          >
+            菜单
+          </button>`
+      }
+
+      displayHtml +=
+        `<button
             class="btn btn-link btn-no-underline btn-text-size"
             onclick="delete${capitalizeFirstLetter(menuName)}sBox(${items[btnDataIndex]})"
           >
@@ -520,6 +528,131 @@ function createTable(selector, menuName, data, hasBtn = true, btnDataIndex = 0) 
   $(selector).html(displayHtml);
 }
 
+// 首字母大写
 function capitalizeFirstLetter(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+
+/* ===== 自定义菜单树模态框 ===== */
+function createTreeBox(id, title, treeData, hasBtn = true, hasCheckBox = true, hasDetail = true, hasAdd = true, hasDelete = true) {
+  let menuTree = `<div id="${id}"></div>`;
+  confirmBox(title, menuTree, 1, false, true, null, null, () => {
+    createTree(id, treeData, hasBtn, hasCheckBox, hasDetail, hasAdd, hasDelete);
+    // 给模态框限制高度， 并添加滚动条
+    $(`#${id}`).css({
+      "height": "350px",
+      "overflow-y": "auto",
+      "font-size": "16px",
+    });
+  });
+}
+
+
+
+function menuDetailFormBox(menu, readonly = false) {
+  createFormBox(
+    "menuDetail",
+    "菜单详情",
+    [{
+        label: "ID",
+        type: "text",
+        name: "id",
+        required: true,
+        disabled: true,
+        value: menu.id,
+      },
+      {
+        label: "菜单名",
+        type: "text",
+        name: "name",
+        required: true,
+        placeholder: "菜单名",
+        reg: "^.{2,12}$",
+        regTitle: "请输入2-12位的字符",
+        value: menu.name,
+        disabled: readonly
+      },
+      {
+        label: "菜单显示顺序",
+        type: "number",
+        name: "order",
+        required: true,
+        placeholder: "菜单显示顺序",
+        reg: "^[1-9]\d*$",
+        regTitle: "请输入有效数字",
+        value: menu.order,
+        disabled: readonly
+      },
+      {
+        label: "菜单层级",
+        type: "number",
+        name: "level",
+        required: true,
+        reg: "^[1-9]\d*$",
+        regTitle: "请输入有效数字",
+        placeholder: "菜单层级",
+        value: menu.level,
+        disabled: readonly
+      },
+      {
+        label: "父菜单id",
+        type: "number",
+        name: "parentId",
+        required: false,
+        reg: "^[1-9]\d*$",
+        regTitle: "请输入有效数字",
+        placeholder: "父菜单id",
+        value: menu.parentId,
+        disabled: readonly
+      },
+      {
+        label: "菜单路径",
+        type: "text",
+        name: "url",
+        required: false,
+        placeholder: "菜单路径",
+        value: menu.url,
+        disabled: readonly
+      },
+      {
+        label: "菜单描述",
+        type: "textarea",
+        name: "description",
+        placeholder: "菜单描述",
+        required: false,
+        rows: 4,
+        value: menu.description,
+        disabled: readonly
+      },
+      {
+        label: "创建时间",
+        type: "date",
+        name: "createTime",
+        required: false,
+        disabled: true,
+        value: formatDate(menu.createTime, false),
+      },
+      {
+        label: "修改时间",
+        type: "date",
+        name: "updateTime",
+        required: false,
+        disabled: true,
+        value: formatDate(menu.updateTime, false),
+      },
+    ],
+    1,
+    (data, closeFun) => {
+      if (readonly) {
+        closeFun();
+        return;
+      }
+      confirmBox("提示", "确定修改吗?", 0, true, true, () => {
+        updateMenu(data);
+        closeFun();
+      });
+    },
+    "修改"
+  );
 }

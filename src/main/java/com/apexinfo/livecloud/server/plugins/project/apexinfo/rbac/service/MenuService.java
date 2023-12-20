@@ -2,9 +2,11 @@ package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.service;
 
 import com.apexinfo.livecloud.server.plugins.product.mobile.extend.DemoService;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.MenuMapper;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.RoleMenuMapper;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.Menu;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.MenuVO;
 import org.apache.log4j.Logger;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -35,14 +37,34 @@ public class MenuService {
 
     /**
      * 查询菜单树 / 根据角色id查询菜单树
+     *
      * @param roleId
+     * @param menuId
+     * @param userId
      * @return
      */
-    public List<MenuVO> queryToTree(Long roleId, Long menuId) {
+    public List<MenuVO> queryToTree(Long roleId, Long menuId, Long userId) {
         List<MenuVO> menusTree = new ArrayList<>();
         List<Menu> menuList = null;
+        if (menuId != null) {
+            // 根据菜单id查询菜单
+            menuList = menuMapper.queryById(menuId);
+            MenuVO menuVO = new MenuVO();
+            menuVO.setMenu(menuList.get(0));
+            menusTree.add(menuVO);
+        } else if (roleId != null) {
+            // 根据角色id查询菜单
+            menuList = menuMapper.queryByRoleId(roleId);
+        } else if (userId != null) {
+            // 根据用户id查询菜单
+            menuList = menuMapper.queryByUserId(userId);
+        } else {
+            // 查询所有菜单
+            menuList = menuMapper.query();
+        }
+
         if (menuId == null) {
-            menuList = query(roleId);
+            // 构建菜单树
             for (Menu menu : menuList) {
                 // 根节点的 level 为 1
                 if (menu.getLevel() == 1) {
@@ -50,19 +72,13 @@ public class MenuService {
                     menusTree.add(menuVO);
                 }
             }
-        } else {
-            menuList = menuMapper.queryById(menuId);
-            MenuVO menuVO = new MenuVO();
-            menuVO.setMenu(menuList.get(0));
-            menusTree.add(menuVO);
         }
-
-        // 构建菜单树
         return menusTree;
     }
 
     /**
      * 递归将菜单列表变成菜单树
+     *
      * @param currentMenu
      * @param menuList
      */
@@ -79,26 +95,11 @@ public class MenuService {
                 children.add(childMenuVO);
             }
         }
-
         // 对 children 列表按照 FOrder 字段排序
         children.sort((menuVo1, menuVo2) -> {
             return Math.toIntExact(menuVo1.getMenu().getOrder() - menuVo2.getMenu().getOrder());
         });
-
         return menuVO;
-    }
-
-    /**
-     * 查询所有菜单 / 根据角色id查询菜单
-     *
-     * @param roleId
-     * @return
-     */
-    public List<Menu> query(Long roleId) {
-        if (roleId == null) {
-            return menuMapper.query();
-        }
-        return menuMapper.queryByRoleId(roleId);
     }
 
     /**
@@ -130,14 +131,11 @@ public class MenuService {
      * @param id
      * @return
      */
-    // TODO 现有以下多种处理方式, 待定
-    //  1. 如果该菜单还有角色, 则无法删除
-    //  2. 如果该菜单还有角色, 同时将角色_菜单表的数据一起删除
-    //  3. 如果该菜单还有角色, 但是该角色没有用户使用, 直接将菜单
-    //     和角色_菜单表一起删除, 如果该角色有用户使用, 则无法删除
-    //  4. 如果该菜单底下还有子菜单, 则无法删除 / 全部删除 / 将子
-    //     菜单的parentId变成该菜单的parentId, 层级 - 1
+    @Transactional(rollbackFor = Exception.class)
     public int delete(List<Long> id) {
+        // 删除角色_菜单关联表
+        RoleMenuMapper roleMenuMapper = new RoleMenuMapper();
+        roleMenuMapper.deleteByMenuId(id);
         return menuMapper.delete(id);
     }
 }
