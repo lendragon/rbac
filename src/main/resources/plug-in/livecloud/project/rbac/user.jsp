@@ -28,6 +28,7 @@
       <th>性别</th>
       <th>出生日期</th>
       <th>手机号</th>
+      <th>用户状态</th>
       <th>创建时间</th>
       <th>修改时间</th>
       <th class="col-xs-2">操作</th>
@@ -51,31 +52,6 @@
     $("#addUserBtn").click(addUserFormBox);
     $("#batchDeleteBtn").click(batchDelete);
   });
-
-  // 将用户的数据转换成二维数组便于表格展示
-  function changeJsonToArr(data) {
-    let properties = [
-      "id",
-      "no",
-      "name",
-      "sex",
-      "birthDay",
-      "phoneNum",
-      "createTime",
-      "updateTime",
-    ];
-    return data.map((obj) =>
-      properties.map((prop) => {
-        if (prop === "birthDay") {
-          return isEmpty(obj[prop]) ? "null" : formatDate(obj[prop], false);
-        }
-        if (prop === "createTime" || prop === "updateTime") {
-          return formatDate(obj[prop], false);
-        }
-        return obj[prop];
-      })
-    );
-  }
 
   // 查询用户
   function queryUsers(pageNo, keyword) {
@@ -101,8 +77,19 @@
         let users = res.data.records;
         let total = res.data.total;
         let pageSize = res.data.pageSize;
+        let properties = [
+          "id",
+          "no",
+          "name",
+          "sex",
+          "birthDay",
+          "phoneNum",
+          "state",
+          "createTime",
+          "updateTime",
+        ];
         // 创建表格
-        createTable("#userData", "user", changeJsonToArr(users));
+        createTable("#userData", "user", changeJsonToArr(properties, users));
 
         // 创建分页组件
         createPageBtn(Math.ceil(total / pageSize), true, "queryUsers");
@@ -211,6 +198,25 @@
         value: user.phoneNum == null ? "" : user.phoneNum,
       },
       {
+        label: "用户状态",
+        type: "radio",
+        name: "sex",
+        required: true,
+        options: [
+          {
+            name: "正常",
+            value: "",
+            checked: user.state === 0,
+          },
+          {
+            name: "禁用",
+            value: "1",
+            checked: user.state === 1,
+          },
+        ],
+        placeholder: "用户状态",
+      },
+      {
         label: "创建时间",
         type: "date",
         name: "createTime",
@@ -246,7 +252,7 @@
   }
 
   // 查看用户角色
-  function userRoleDetail(userId) {
+  function userQueryRole(userId) {
     // 获取用户对应的角色
     $.get(
       ROUTE_ROLE + "?action=query",
@@ -267,7 +273,7 @@
             }
             let roles = res.data.records;
             // 展示模态框
-            userRoleDetailFormBox(userId, userRoles, roles);
+            userQueryRoleFormBox(userId, userRoles, roles);
           },
           "json"
         );
@@ -276,7 +282,7 @@
     );
   }
 
-  function userRoleDetailFormBox(userId, userRoles, roles) {
+  function userQueryRoleFormBox(userId, userRoles, roles) {
     let options = [];
     roles.forEach((role) => {
       options.push({
@@ -308,7 +314,7 @@
 
     // 创建表单模态框
     createFormBox(
-      "userRoleDetail",
+      "userQueryRole",
       "用户关联角色",
       userRoleFormData,
       1,
@@ -327,7 +333,7 @@
 
   // 为多选框绑定事件
   function checkBoxEvent(addList, deleteList) {
-    $("#userRoleDetail input[type='checkbox']").click(function () {
+    $("#userQueryRole input[type='checkbox']").click(function () {
       let id = $(this).val();
       if ($(this).is(":checked")) {
         // 多选框被勾选
@@ -361,20 +367,20 @@
     data.id = userId;
     data.addList = addList;
     data.deleteList = deleteList;
-    $.ajax({
-      url: ROUTE_USER_ROLE + "?action=update",
-      type: "POST",
-      contentType: "application/json",
-      data: JSON.stringify(data),
-      success: function (res) {
-        // 请求成功后的回调函数
-        if (!res.success) {
-          failMessageFloat(res.msg);
-          return;
-        }
-        successMessageFloat(res.msg);
-      },
-    });
+    // $.ajax({
+    //   url: ROUTE_USER_ROLE + "?action=update",
+    //   type: "POST",
+    //   contentType: "application/json",
+    //   data: JSON.stringify(data),
+    //   success: function (res) {
+    //     // 请求成功后的回调函数
+    //     if (!res.success) {
+    //       failMessageFloat(res.msg);
+    //       return;
+    //     }
+    //     successMessageFloat(res.msg);
+    //   },
+    // });
   }
 
   // 查看用户菜单
@@ -394,7 +400,7 @@
         failMessageFloat(res.msg);
         return;
       }
-      menu = res.data[0].menu;
+      menu = res.data[0];
       menuDetailFormBox(menu, true);
     });
   }
@@ -456,7 +462,7 @@
       let checked = $(".select-row:checked");
       let usersId = [];
       checked.each(function () {
-        usersId.push(parseInt($(this).parent().next().text()));
+        usersId.push(parseInt($(this).val()));
       });
       deleteUsers(usersId);
     });
@@ -466,10 +472,10 @@
   function deleteUsers(usersId) {
     let data = {};
     if (typeof usersId === "number") {
-      data.id = [];
-      data.id.push(usersId);
+      data.ids = [];
+      data.ids.push(usersId);
     } else {
-      data.id = usersId;
+      data.ids = usersId;
     }
     let param = $.param(data).replaceAll("%5B%5D", "");
     $.post(ROUTE_USER + "?action=delete", param, (res) => {
@@ -534,15 +540,6 @@
         regTitle: "请输入2-12位的字符",
       },
       {
-        label: "密码",
-        type: "password",
-        name: "password",
-        required: true,
-        placeholder: "密码",
-        reg: "^[^\u4e00-\u9fa5]{4,16}$",
-        regTitle: "请输入4-16位的数字、字母或特殊字符",
-      },
-      {
         label: "性别",
         type: "radio",
         name: "sex",
@@ -579,6 +576,24 @@
         placeholder: "电话",
         reg: "^$|^[0-9]{7,15}$",
         regTitle: "请输入有效电话号码",
+      },
+      {
+        label: "用户状态",
+        type: "radio",
+        name: "state",
+        required: true,
+        options: [
+          {
+            name: "正常",
+            value: "0",
+            checked: true,
+          },
+          {
+            name: "禁用",
+            value: "1",
+          },
+        ],
+        placeholder: "用户状态",
       },
     ];
 

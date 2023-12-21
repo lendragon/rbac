@@ -24,6 +24,7 @@
       <th><input type="checkbox" id="select-all" /></th>
       <th>ID</th>
       <th>角色名</th>
+      <th>角色状态</th>
       <th>角色描述</th>
       <th>创建时间</th>
       <th>修改时间</th>
@@ -49,19 +50,6 @@
     $("#batchDeleteBtn").click(batchDelete);
   });
 
-  // 将用户的数据转换成二维数组便于表格展示
-  function changeJsonToArr(data) {
-    let properties = ["id", "name", "description", "createTime", "updateTime"];
-    return data.map((obj) =>
-      properties.map((prop) => {
-        if (prop === "createTime" || prop === "updateTime") {
-          return formatDate(obj[prop], false);
-        }
-        return obj[prop];
-      })
-    );
-  }
-
   // 查询角色
   function queryRoles(pageNo, keyword) {
     let params = "action=query";
@@ -86,8 +74,16 @@
         let roles = res.data.records;
         let total = res.data.total;
         let pageSize = res.data.pageSize;
+        let properties = [
+          "id",
+          "name",
+          "state",
+          "description",
+          "createTime",
+          "updateTime",
+        ];
         // 创建表格
-        createTable("#roleData", "role", changeJsonToArr(roles));
+        createTable("#roleData", "role", changeJsonToArr(properties, roles));
 
         // 创建分页组件
         createPageBtn(Math.ceil(total / pageSize), true, "queryRoles");
@@ -135,6 +131,25 @@
           value: role.name,
         },
         {
+          label: "角色状态",
+          type: "radio",
+          name: "state",
+          required: true,
+          options: [
+            {
+              name: "正常",
+              value: "0",
+              checked: role.state === 0,
+            },
+            {
+              name: "禁用",
+              value: "1",
+              checked: role.state === 1,
+            },
+          ],
+          placeholder: "角色状态",
+        },
+        {
           label: "角色描述",
           type: "textarea",
           name: "description",
@@ -169,6 +184,140 @@
       },
       "修改"
     );
+  }
+
+  // 查看角色有的用户
+  function roleQueryUser(roleId) {
+    // 获取角色对应的用户
+    $.get(
+      ROUTE_USER + "?action=query",
+      "roleId=" + roleId,
+      (res) => {
+        if (!res.success) {
+          failMessageFloat(res.msg);
+          return;
+        }
+        let userRoles = res.data.records;
+        // 查询所有用户
+        $.get(
+          ROUTE_USER + "?action=query",
+          (res) => {
+            if (!res.success) {
+              failMessageFloat(res.msg);
+              return;
+            }
+            let users = res.data.records;
+            // 展示模态框
+            roleQueryUserTableBox(roleId, userRoles, users);
+          },
+          "json"
+        );
+      },
+      "json"
+    );
+  }
+
+  function roleQueryUserTableBox(roleId, userRoles, users) {
+    let tableHead = [
+      "ID",
+      "用户编号",
+      "用户名",
+      "性别",
+      "出生日期",
+      "手机号",
+      "用户状态",
+    ];
+    let properties = [
+      "id",
+      "no",
+      "name",
+      "sex",
+      "birthDay",
+      "phoneNum",
+      "state",
+    ];
+    let tableData = changeJsonToArr(properties, users);
+
+    let deleteList = []; // 要删除的列表
+    let addList = []; // 要添加的列表
+
+    // 创建表格模态框
+    createTableBox(
+      "userTable",
+      "授权用户",
+      tableHead,
+      tableData,
+      (closeFun) => {
+        updateUserRole(roleId, addList, deleteList);
+        closeFun();
+      },
+      () => {
+        let userRolesId = $.map(userRoles, function (r) {
+          return r.id;
+        });
+        // 角色有的用户多选框要自动勾选
+        $(`#userTable input[type='checkbox']`).each(function () {
+          if ($.inArray(parseInt($(this).val()), userRolesId) !== -1) {
+            $(this).prop("checked", "true");
+          }
+        });
+
+        // 为多选框绑定事件
+        checkBoxEvent("userTable", addList, deleteList);
+      }
+    );
+  }
+
+  // 为多选框绑定事件
+  function checkBoxEvent(tableId, addList, deleteList) {
+    $("#" + tableId + " input[type='checkbox']").click(function () {
+      let id = $(this).val();
+      if ($(this).is(":checked")) {
+        // 多选框被勾选
+        if ($.inArray(id, deleteList) !== -1) {
+          // 如果deleteList中已经有该id，则从deleteList中删除
+          deleteList = $.grep(deleteList, function (value) {
+            return value != id;
+          });
+        } else {
+          // 否则，将该id添加到addList中
+          addList.push(id);
+        }
+      } else {
+        // 多选框被取消勾选
+        if ($.inArray(id, addList) !== -1) {
+          // 如果addList中已经有该id，则从addList中删除
+          addList = $.grep(addList, function (value) {
+            return value != id;
+          });
+        } else {
+          // 否则，将该id添加到deleteList中
+          deleteList.push(id);
+        }
+      }
+    });
+  }
+
+  // 修改用户角色关联
+  function updateUserRole(roleId, addList, deleteList) {
+    let data = {};
+    data.roleId = roleId;
+    data.addIds = addList;
+    data.deleteIds = deleteList;
+    $.ajax({
+      url: ROUTE_USER_ROLE + "?action=update",
+      type: "POST",
+      contentType: "application/json",
+      data: JSON.stringify(data),
+      success: function (res) {
+        // 请求成功后的回调函数
+        if (!res.success) {
+          failMessageFloat(res.msg);
+          return;
+        }
+        successMessageFloat(res.msg);
+      },
+    });
   }
 
   // 查询角色相关的菜单
@@ -252,7 +401,8 @@
           },
         });
 
-        // 创建完后, 对有的角色的多选框进行选中
+        // 
+        $('#roleMenu').treeview('expandAll');
       }
     );
   }
@@ -295,7 +445,7 @@
         if (!childNode.state.checked) {
           return;
         }
-        
+
         let nodeId = $($(childNode.text)[0]).val();
         if ($.inArray(nodeId, addList) === -1) {
           deleteList.push(nodeId);
@@ -320,13 +470,13 @@
   function getIdsToArray(data) {
     let ids = [];
     $.each(data, function (index, value) {
-      ids.push(value.menu.id);
+      ids.push(value.id);
       if (value.children) {
         $.each(value.children, function (index, value) {
-          ids.push(value.menu.id);
+          ids.push(value.id);
           if (value.children) {
             $.each(value.children, function (index, value) {
-              ids.push(value.menu.id);
+              ids.push(value.id);
             });
           }
         });
@@ -339,11 +489,11 @@
     return menus.map((item) => ({
       text:
         `<input type="hidden" value="` +
-        item.menu.id +
+        item.id +
         `" parentId="` +
-        item.menu.parentId +
+        item.parentId +
         `">` +
-        item.menu.name +
+        item.name +
         `<span class="label label-info margin-5">` +
         item.children.length +
         `</span>
@@ -351,7 +501,7 @@
           <button
             class="btn btn-info btn-sm btn-tree"
             onclick="event.stopPropagation(); menuDetail(` +
-        item.menu.id +
+        item.id +
         `);"
           >
             <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
@@ -362,7 +512,7 @@
           ? convertToTreeDataOverride(originList, item.children)
           : null,
       state: {
-        checked: $.inArray(item.menu.id, originList) !== -1,
+        checked: $.inArray(item.id, originList) !== -1,
         // checked: true,
       },
     }));
@@ -370,10 +520,9 @@
 
   function updateRoleMenu(roleId, addList, deleteList) {
     let data = {};
-    data.id = roleId;
-    data.addList = addList;
-    data.deleteList = deleteList;
-    console.log(JSON.stringify(data));
+    data.roleId = roleId;
+    data.addIds = addList;
+    data.deleteIds = deleteList;
     $.ajax({
       url: ROUTE_ROLE_MENU + "?action=update",
       type: "POST",
@@ -396,7 +545,7 @@
         failMessageFloat(res.msg);
         return;
       }
-      menu = res.data[0].menu;
+      menu = res.data[0];
       menuDetailFormBox(menu, true);
     });
   }
@@ -433,7 +582,7 @@
       let checked = $(".select-row:checked");
       let rolesId = [];
       checked.each(function () {
-        rolesId.push(parseInt($(this).parent().next().text()));
+        rolesId.push(parseInt($(this).val()));
       });
       deleteRoles(rolesId);
     });
@@ -443,10 +592,10 @@
   function deleteRoles(rolesId) {
     let data = {};
     if (typeof rolesId === "number") {
-      data.id = [];
-      data.id.push(rolesId);
+      data.ids = [];
+      data.ids.push(rolesId);
     } else {
-      data.id = rolesId;
+      data.ids = rolesId;
     }
     let param = $.param(data).replaceAll("%5B%5D", "");
     $.post(ROUTE_ROLE + "?action=delete", param, (res) => {
@@ -492,6 +641,24 @@
           placeholder: "角色名",
           reg: "^.{2,12}$",
           regTitle: "请输入2-12位的字符",
+        },
+        {
+          label: "角色状态",
+          type: "radio",
+          name: "state",
+          required: true,
+          options: [
+            {
+              name: "正常",
+              value: "0",
+              checked: true,
+            },
+            {
+              name: "禁用",
+              value: "1",
+            },
+          ],
+          placeholder: "角色状态",
         },
         {
           label: "角色描述",

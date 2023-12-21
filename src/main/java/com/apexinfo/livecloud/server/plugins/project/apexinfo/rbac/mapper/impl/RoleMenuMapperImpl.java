@@ -1,5 +1,6 @@
 package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.impl;
 
+import com.apex.livebos.console.common.util.Util;
 import com.apex.util.ApexDao;
 import com.apexinfo.livecloud.server.core.GeneralMapper;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant.CommonConstants;
@@ -22,19 +23,21 @@ public class RoleMenuMapperImpl extends GeneralMapper implements IRoleMenuMapper
      * 根据角色id新增对应的菜单
      *
      * @param roleId
-     * @param addId
+     * @param menuIds
      * @return
      */
     // TODO 事务待修改
     @Override
-    public int add(Long roleId, List<Long> addId) {
+    public int addMenuList(Long roleId, List<Long> menuIds) {
+        if (menuIds.size() <= 0) {
+            return 1;
+        }
         int rows = 0;
-        ApexDao dao = null;
         try {
             String sql = "insert into CT_Rbac_Role_Menu(ID, FRoleId, FMenuId) values(?, ?, ?) ";
-            dao = new ApexDao();
+            ApexDao dao = new ApexDao();
             dao.prepareStatement(sql);
-            for (Long menuId : addId) {
+            for (Long menuId : menuIds) {
                 long nextID = getNextID(CommonConstants.TABLE_RBAC_ROLE_MENU);
                 dao.setLong(1, nextID);
                 dao.setLong(2, roleId);
@@ -47,8 +50,6 @@ public class RoleMenuMapperImpl extends GeneralMapper implements IRoleMenuMapper
             e.printStackTrace();
             logger.error(e.getMessage(), e);
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-        } finally {
-            closeResource(dao);
         }
         return rows;
     }
@@ -57,32 +58,32 @@ public class RoleMenuMapperImpl extends GeneralMapper implements IRoleMenuMapper
      * 根据角色id删除对应的菜单
      *
      * @param roleId
-     * @param deleteId
+     * @param menuIds
      * @return
      */
     // TODO 事务待修改
     @Override
-    public int deleteByList(Long roleId, List<Long> deleteId) {
+    public int deleteByMenuList(Long roleId, List<Long> menuIds) {
+        if (Util.isEmpty(menuIds)) {
+            return 1;
+        }
         int rows = 0;
-        ApexDao dao = null;
         try {
             StringBuilder sql = new StringBuilder();
             sql.append("delete from CT_Rbac_Role_Menu where FRoleId = ? and FMenuId in ");
-            sql.append(SQLUtil.listToSQLList(deleteId));
+            sql.append(SQLUtil.listToSQLList(menuIds));
 
-            dao = new ApexDao();
+            ApexDao dao = new ApexDao();
             dao.prepareStatement(sql.toString());
             dao.setLong(1, roleId);
-            for (int i = 0; i < deleteId.size(); i++) {
-                dao.setLong(i + 2, deleteId.get(i));
+            for (int i = 0; i < menuIds.size(); i++) {
+                dao.setLong(i + 2, menuIds.get(i));
             }
             rows = dao.executeUpdate(getDataSource());
         } catch (SQLException e) {
             e.printStackTrace();
             logger.error(e.getMessage(), e);
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-        } finally {
-            closeResource(dao);
         }
         return rows;
     }
@@ -90,31 +91,31 @@ public class RoleMenuMapperImpl extends GeneralMapper implements IRoleMenuMapper
     /**
      * 根据角色id删除对应的所有角色_菜单关联
      *
-     * @param roleId
+     * @param roleIds
      * @return
      */
     // TODO 事务待修改
     @Override
-    public int deleteByRoleId(List<Long> roleId) {
+    public int deleteByRoleId(List<Long> roleIds) {
+        if (Util.isEmpty(roleIds)) {
+            return 1;
+        }
         int rows = 0;
-        ApexDao dao = null;
         try {
             StringBuilder sql = new StringBuilder();
             sql.append("delete from CT_Rbac_Role_Menu where FRoleId in ");
-            sql.append(SQLUtil.listToSQLList(roleId));
+            sql.append(SQLUtil.listToSQLList(roleIds));
 
-            dao = new ApexDao();
+            ApexDao dao = new ApexDao();
             dao.prepareStatement(sql.toString());
-            for (int i = 0; i < roleId.size(); i++) {
-                dao.setLong(i + 1, roleId.get(i));
+            for (int i = 0; i < roleIds.size(); i++) {
+                dao.setLong(i + 1, roleIds.get(i));
             }
             rows = dao.executeUpdate(getDataSource());
         } catch (SQLException e) {
             e.printStackTrace();
             logger.error(e.getMessage(), e);
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-        } finally {
-            closeResource(dao);
         }
         return rows;
     }
@@ -122,31 +123,31 @@ public class RoleMenuMapperImpl extends GeneralMapper implements IRoleMenuMapper
     /**
      * 根据菜单id删除对应的所有角色_菜单关联
      *
-     * @param menuId
+     * @param menuIds
      * @return
      */
     // TODO 事务待修改
     @Override
-    public int deleteByMenuId(List<Long> menuId) {
+    public int deleteByMenuId(List<Long> menuIds) {
+        if (Util.isEmpty(menuIds)) {
+            return 1;
+        }
         int rows = 0;
-        ApexDao dao = null;
         try {
             StringBuilder sql = new StringBuilder();
             sql.append("delete from CT_Rbac_Role_Menu where FMenuId in ");
-            sql.append(SQLUtil.listToSQLList(menuId));
+            sql.append(SQLUtil.listToSQLList(menuIds));
 
-            dao = new ApexDao();
+            ApexDao dao = new ApexDao();
             dao.prepareStatement(sql.toString());
-            for (int i = 0; i < menuId.size(); i++) {
-                dao.setLong(i + 1, menuId.get(i));
+            for (int i = 0; i < menuIds.size(); i++) {
+                dao.setLong(i + 1, menuIds.get(i));
             }
             rows = dao.executeUpdate(getDataSource());
         } catch (SQLException e) {
             e.printStackTrace();
             logger.error(e.getMessage(), e);
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-        } finally {
-            closeResource(dao);
         }
         return rows;
     }

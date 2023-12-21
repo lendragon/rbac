@@ -21,7 +21,7 @@ function formatDate(timestamp, isDetail = true) {
   }
 
   // 格式化日期字符串
-  
+
   return formattedDate;
 }
 
@@ -92,3 +92,23 @@ function isEmpty(v) {
   return typeof (v) === "undefined" || v === null || v === "";
 }
 
+// 将数据转换成二维数组便于表格展示
+function changeJsonToArr(properties, data) {
+  return data.map((obj) =>
+    properties.map((prop) => {
+      if (prop === "birthDay") {
+        return isEmpty(obj[prop]) ? "null" : formatDate(obj[prop], false);
+      }
+      if (prop === "createTime" || prop === "updateTime") {
+        return formatDate(obj[prop], false);
+      }
+      if (prop === "sex") {
+        return obj[prop] === 0 ? "男" : "女";
+      }
+      if (prop === "state") {
+        return obj[prop] === 0 ? "可用" : "禁用";
+      }
+      return obj[prop];
+    })
+  );
+}

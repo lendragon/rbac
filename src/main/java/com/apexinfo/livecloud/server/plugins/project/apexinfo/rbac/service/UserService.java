@@ -1,14 +1,13 @@
 package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.service;
 
 import com.apexinfo.livecloud.server.plugins.product.mobile.extend.DemoService;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant.CommonConstants;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.IUserMapper;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.impl.UserMapperImpl;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.impl.UserRoleMapperImpl;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.PageDTO;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.RelativeDTO;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.User;
 import org.apache.log4j.Logger;
-import org.springframework.transaction.annotation.Transactional;
+
 import java.util.*;
 
 /**
@@ -37,29 +36,37 @@ public class UserService {
     }
 
     /**
-     * 分页查询/模糊查询所有用户 / 根据用户id查询用户
+     * 分页查询/模糊查询所有用户 / 根据用户id查询用户 / 根据角色id查询用户
      *
      * @param pageNo
      * @param pageSize
      * @param keyword
      * @param id
+     * @param roleId
      * @return
      */
-    public PageDTO<User> query(Integer pageNo, Integer pageSize, String keyword, Long id) {
+    public PageDTO<User> query(Integer pageNo, Integer pageSize, String keyword, Long id, Long roleId) {
         PageDTO<User> pageDTO = null;
-        if (id == null) {
-            if (pageNo == null) {
-                pageNo = 1;
-            }
-            if (pageSize == null) {
-                pageSize = 20;
-            }
-            pageDTO = userMapper.query(pageNo, pageSize, keyword);
-        } else {
+        if (id != null) {
+            // 根据用户id查询
             pageDTO = userMapper.queryById(id);
             pageDTO.setPageNo(1);
             pageDTO.setPageSize(1);
+            return pageDTO;
         }
+        if (roleId != null) {
+            // 根据角色id查询
+            pageDTO = userMapper.queryByRoleId(roleId);
+            return pageDTO;
+        }
+        // 查询全部
+        if (pageNo == null) {
+            pageNo = 1;
+        }
+        if (pageSize == null) {
+            pageSize = 20;
+        }
+        pageDTO = userMapper.query(pageNo, pageSize, keyword);
         return pageDTO;
     }
 
@@ -82,6 +89,7 @@ public class UserService {
      */
     public int add(User user) {
         int rows;
+        user.setPassword(CommonConstants.DATA_USER_PASSWORD);
         user.setCreateTime(new Date());
         user.setUpdateTime(user.getCreateTime());
         rows = userMapper.add(user);
@@ -101,24 +109,24 @@ public class UserService {
         return rows;
     }
 
-    /**
-     * 修改用户的角色
-     *
-     * @param relativeDTO
-     * @return
-     */
-    // TODO 事务待修改
-    public int updateUserRoles(RelativeDTO relativeDTO) {
-        if (relativeDTO.getAddList().size() == 0 && relativeDTO.getDeleteList().size() == 0) {
-            return 1;
-        }
-        int rows = 0;
-        // 进行删除操作
-        rows += UserRoleService.getInstance().deleteByIdList(relativeDTO.getId(), relativeDTO.getDeleteList());
-        // 进行新增操作
-        rows += UserRoleService.getInstance().add(relativeDTO.getId(), relativeDTO.getAddList());
-        return rows;
-    }
+//    /**
+//     * 修改用户的角色
+//     *
+//     * @param relativeDTO
+//     * @return
+//     */
+//    // TODO 事务待修改
+//    public int updateUserRoles(RelativeDTO relativeDTO) {
+//        if (relativeDTO.getAddList().size() == 0 && relativeDTO.getDeleteList().size() == 0) {
+//            return 1;
+//        }
+//        int rows = 0;
+//        // 进行删除操作
+//        rows += UserRoleService.getInstance().deleteByRoleIdList(relativeDTO.getId(), relativeDTO.getDeleteList());
+//        // 进行新增操作
+//        rows += UserRoleService.getInstance().addRoleList(relativeDTO.getId(), relativeDTO.getAddList());
+//        return rows;
+//    }
 
     /**
      * 删除用户

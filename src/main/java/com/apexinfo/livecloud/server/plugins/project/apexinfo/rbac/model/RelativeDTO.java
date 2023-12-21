@@ -1,5 +1,7 @@
 package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.List;
 
 /**
@@ -11,42 +13,45 @@ import java.util.List;
  */
 public class RelativeDTO {
     // 要修改的实体id
-    private Long id;
+    @JsonProperty(required = true)
+    private Long roleId;
     // 要添加的id列表
-    private List<Long> addList;
+    @JsonProperty(required = true)
+    private List<Long> addIds;
     // 要删除的id列表
-    private List<Long> deleteList;
+    @JsonProperty(required = true)
+    private List<Long> deleteIds;
 
     public RelativeDTO() {
     }
 
-    public RelativeDTO(Long id, List<Long> addList, List<Long> deleteList) {
-        this.id = id;
-        this.addList = addList;
-        this.deleteList = deleteList;
+    public RelativeDTO(Long roleId, List<Long> addIds, List<Long> deleteIds) {
+        this.roleId = roleId;
+        this.addIds = addIds;
+        this.deleteIds = deleteIds;
     }
 
-    public Long getId() {
-        return id;
+    public Long getRoleId() {
+        return roleId;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setRoleId(Long roleId) {
+        this.roleId = roleId;
     }
 
-    public List<Long> getAddList() {
-        return addList;
+    public List<Long> getAddIds() {
+        return addIds;
     }
 
-    public void setAddList(List<Long> addList) {
-        this.addList = addList;
+    public void setAddIds(List<Long> addIds) {
+        this.addIds = addIds;
     }
 
-    public List<Long> getDeleteList() {
-        return deleteList;
+    public List<Long> getDeleteIds() {
+        return deleteIds;
     }
 
-    public void setDeleteList(List<Long> deleteList) {
-        this.deleteList = deleteList;
+    public void setDeleteIds(List<Long> deleteIds) {
+        this.deleteIds = deleteIds;
     }
 }

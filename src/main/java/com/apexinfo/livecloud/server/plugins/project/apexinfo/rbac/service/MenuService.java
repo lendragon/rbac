@@ -3,11 +3,8 @@ package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.service;
 import com.apexinfo.livecloud.server.plugins.product.mobile.extend.DemoService;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.IMenuMapper;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.impl.MenuMapperImpl;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.impl.RoleMenuMapperImpl;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.Menu;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.MenuVO;
 import org.apache.log4j.Logger;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -44,15 +41,13 @@ public class MenuService {
      * @param userId
      * @return
      */
-    public List<MenuVO> queryToTree(Long roleId, Long menuId, Long userId) {
-        List<MenuVO> menusTree = new ArrayList<>();
+    public List<Menu> queryToTree(Long roleId, Long menuId, Long userId) {
+        List<Menu> menusTree = new ArrayList<>();
         List<Menu> menuList = null;
         if (menuId != null) {
             // 根据菜单id查询菜单
             menuList = menuMapper.queryById(menuId);
-            MenuVO menuVO = new MenuVO();
-            menuVO.setMenu(menuList.get(0));
-            menusTree.add(menuVO);
+            menusTree.add(menuList.get(0));
         } else if (roleId != null) {
             // 根据角色id查询菜单
             menuList = menuMapper.queryByRoleId(roleId);
@@ -69,8 +64,7 @@ public class MenuService {
             for (Menu menu : menuList) {
                 // 根节点的 level 为 1
                 if (menu.getLevel() == 1) {
-                    MenuVO menuVO = buildMenuTree(menu, menuList);
-                    menusTree.add(menuVO);
+                    menusTree.add(buildMenuTree(menu, menuList));
                 }
             }
         }
@@ -83,24 +77,19 @@ public class MenuService {
      * @param currentMenu
      * @param menuList
      */
-    private MenuVO buildMenuTree(Menu currentMenu, List<Menu> menuList) {
-        MenuVO menuVO = new MenuVO();
-        List<MenuVO> children = new ArrayList<>();
-        menuVO.setMenu(currentMenu);
-        menuVO.setChildren(children);
+    private Menu buildMenuTree(Menu currentMenu, List<Menu> menuList) {
+        List<Menu> children = new ArrayList<>();
+        currentMenu.setChildren(children);
 
-        long parentId = currentMenu.getId();
+        long currentMenuId = currentMenu.getId();
         for (Menu menu : menuList) {
-            if (menu.getParentId() == parentId) {
-                MenuVO childMenuVO = buildMenuTree(menu, menuList);
-                children.add(childMenuVO);
+            if (menu.getParentId() == currentMenuId) {
+                children.add(buildMenuTree(menu, menuList));
             }
         }
         // 对 children 列表按照 FOrder 字段排序
-        children.sort((menuVo1, menuVo2) -> {
-            return Math.toIntExact(menuVo1.getMenu().getOrder() - menuVo2.getMenu().getOrder());
-        });
-        return menuVO;
+        children.sort(Comparator.comparingInt(Menu::getOrder));
+        return currentMenu;
     }
 
     /**
@@ -129,13 +118,13 @@ public class MenuService {
     /**
      * 删除菜单
      *
-     * @param id
+     * @param ids
      * @return
      */
     //TODO 事务待修改
-    public int delete(List<Long> id) {
+    public int delete(List<Long> ids) {
         // 删除角色_菜单关联表
-        RoleMenuService.getInstance().deleteByMenuId(id);
-        return menuMapper.delete(id);
+        RoleMenuService.getInstance().deleteByMenuId(ids);
+        return menuMapper.delete(ids);
     }
 }

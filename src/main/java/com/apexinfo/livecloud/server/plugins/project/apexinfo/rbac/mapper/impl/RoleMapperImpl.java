@@ -38,20 +38,19 @@ public class RoleMapperImpl extends GeneralMapper implements IRoleMapper {
         pageDTO.setRecords(roles);
         pageDTO.setPageNo(pageNo);
         pageDTO.setPageSize(pageSize);
-        ApexDao dao = null;
         ApexRowSet rs = null;
         try {
             StringBuilder sql = new StringBuilder();
-            sql.append("select ID, FName, FCreateTime, FUpdateTime, FDescription ");
+            sql.append("select ID, FName, FState, FDescription, FCreateTime, FUpdateTime ");
             sql.append("from CT_Rbac_Role where 1 = 1 ");
             // 拼接模糊查询SQL
             if (!Util.isEmpty(keyword)) {
-                SQLUtil.likeContact(sql, "FName", "FDescription");
+                SQLUtil.likeContact(sql, "FName", "FState", "FDescription");
             }
-            dao = new ApexDao();
+            ApexDao dao = new ApexDao();
             dao.prepareStatement(sql.toString());
             if (!Util.isEmpty(keyword)) {
-                SQLUtil.setLikeSQL(dao, keyword, 1, 2);
+                SQLUtil.setLikeSQL(dao, keyword, 1, 3);
             }
             rs = dao.getRowSet(getDataSource(), pageNo, pageSize, null);
             pageDTO.setTotal(rs.getCount());
@@ -59,16 +58,17 @@ public class RoleMapperImpl extends GeneralMapper implements IRoleMapper {
                 Role role = new Role();
                 role.setId(rs.getLong("ID"));
                 role.setName(rs.getString("FName"));
+                role.setState(rs.getInt("FState"));
+                role.setDescription(rs.getString("FDescription"));
                 role.setCreateTime(rs.getDate("FCreateTime"));
                 role.setUpdateTime(rs.getDate("FUpdateTime"));
-                role.setDescription(rs.getString("FDescription"));
                 roles.add(role);
             }
         } catch (SQLException e) {
             e.printStackTrace();
             logger.error(e.getMessage(), e);
         } finally {
-            closeResource(dao, rs);
+            closeResource(rs);
         }
         return pageDTO;
     }
@@ -84,15 +84,14 @@ public class RoleMapperImpl extends GeneralMapper implements IRoleMapper {
         PageDTO<Role> pageDTO = new PageDTO<>();
         List<Role> roles = new ArrayList<>();
         pageDTO.setRecords(roles);
-        ApexDao dao = null;
         ApexRowSet rs = null;
         try {
             StringBuilder sql = new StringBuilder();
-            sql.append("select ID, FName, FCreateTime, FUpdateTime, FDescription ");
+            sql.append("select ID, FName, FState, FDescription, FCreateTime, FUpdateTime ");
             sql.append("from CT_Rbac_Role where ID in ");
             sql.append("(select FRoleId from CT_Rbac_User_Role where FUserId = ?)");
 
-            dao = new ApexDao();
+            ApexDao dao = new ApexDao();
             dao.prepareStatement(sql.toString());
             dao.setLong(1, userId);
             rs = dao.getRowSet(getDataSource());
@@ -101,16 +100,17 @@ public class RoleMapperImpl extends GeneralMapper implements IRoleMapper {
                 Role role = new Role();
                 role.setId(rs.getLong("ID"));
                 role.setName(rs.getString("FName"));
+                role.setState(rs.getInt("FState"));
+                role.setDescription(rs.getString("FDescription"));
                 role.setCreateTime(rs.getDate("FCreateTime"));
                 role.setUpdateTime(rs.getDate("FUpdateTime"));
-                role.setDescription(rs.getString("FDescription"));
                 roles.add(role);
             }
         } catch (SQLException e) {
             e.printStackTrace();
             logger.error(e.getMessage(), e);
         } finally {
-            closeResource(dao, rs);
+            closeResource(rs);
         }
         return pageDTO;
     }
@@ -126,14 +126,13 @@ public class RoleMapperImpl extends GeneralMapper implements IRoleMapper {
         PageDTO<Role> pageDTO = new PageDTO<>();
         List<Role> roles = new ArrayList<>();
         pageDTO.setRecords(roles);
-        ApexDao dao = null;
         ApexRowSet rs = null;
         try {
             StringBuilder sql = new StringBuilder();
-            sql.append("select ID, FName, FDescription, FCreateTime, FUpdateTime ");
+            sql.append("select ID, FName, FState, FDescription, FCreateTime, FUpdateTime ");
             sql.append("from CT_Rbac_Role where ID = ? ");
 
-            dao = new ApexDao();
+            ApexDao dao = new ApexDao();
             dao.prepareStatement(sql.toString());
             dao.setLong(1, id);
             rs = dao.getRowSet(getDataSource());
@@ -142,6 +141,7 @@ public class RoleMapperImpl extends GeneralMapper implements IRoleMapper {
                 Role role = new Role();
                 role.setId(rs.getLong("ID"));
                 role.setName(rs.getString("FName"));
+                role.setState(rs.getInt("FState"));
                 role.setDescription(rs.getString("FDescription"));
                 role.setCreateTime(rs.getDate("FCreateTime"));
                 role.setUpdateTime(rs.getDate("FUpdateTime"));
@@ -151,7 +151,7 @@ public class RoleMapperImpl extends GeneralMapper implements IRoleMapper {
             e.printStackTrace();
             logger.error(e.getMessage(), e);
         } finally {
-            closeResource(dao, rs);
+            closeResource(rs);
         }
         return pageDTO;
     }
@@ -165,30 +165,27 @@ public class RoleMapperImpl extends GeneralMapper implements IRoleMapper {
     @Override
     public int add(Role role) {
         int rows = 0;
-        ApexDao dao = null;
         try {
             long nextId = getNextID(CommonConstants.TABLE_RBAC_ROLE);
             role.setId(nextId);
             StringBuilder sql = new StringBuilder();
-            sql.append("insert into CT_Rbac_Role(ID, FName, FCreateTime, FUpdateTime, FDescription) ");
-            sql.append("values(?, ?, ?, ?, ?)");
+            sql.append("insert into CT_Rbac_Role(ID, FName, FState, FDescription, FCreateTime, ");
+            sql.append("FUpdateTime) values(?, ?, ?, ?, ?, ?)");
 
-            dao = new ApexDao();
+            ApexDao dao = new ApexDao();
             dao.prepareStatement(sql.toString());
             dao.setLong(1, role.getId());
             dao.setString(2, role.getName());
-            dao.setObject(3, role.getCreateTime());
-            dao.setObject(4, role.getUpdateTime());
-            dao.setString(5, role.getDescription());
+            dao.setInt(3, role.getState());
+            dao.setString(4, role.getDescription());
+            dao.setObject(5, role.getCreateTime());
+            dao.setObject(6, role.getUpdateTime());
 
             rows = dao.executeUpdate(getDataSource());
         } catch (SQLException e) {
             e.printStackTrace();
             logger.error(e.getMessage(), e);
-        } finally {
-            closeResource(dao);
         }
-
         return rows;
     }
 
@@ -201,25 +198,23 @@ public class RoleMapperImpl extends GeneralMapper implements IRoleMapper {
     @Override
     public int update(Role role) {
         int rows = 0;
-        ApexDao dao = null;
         try {
             StringBuilder sql = new StringBuilder();
-            sql.append("update CT_Rbac_Role set FName = ?, FUpdateTime = ?, FDescription = ? ");
+            sql.append("update CT_Rbac_Role set FName = ?, FState = ?, FUpdateTime = ?, FDescription = ? ");
             sql.append("where ID = ? ");
 
-            dao = new ApexDao();
+            ApexDao dao = new ApexDao();
             dao.prepareStatement(sql.toString());
             dao.setString(1, role.getName());
-            dao.setObject(2, role.getUpdateTime());
-            dao.setString(3, role.getDescription());
-            dao.setLong(4, role.getId());
+            dao.setInt(2, role.getState());
+            dao.setObject(3, role.getUpdateTime());
+            dao.setString(4, role.getDescription());
+            dao.setLong(5, role.getId());
 
             rows = dao.executeUpdate(getDataSource());
         } catch (SQLException e) {
             e.printStackTrace();
             logger.error(e.getMessage(), e);
-        } finally {
-            closeResource(dao);
         }
         return rows;
     }
@@ -227,31 +222,28 @@ public class RoleMapperImpl extends GeneralMapper implements IRoleMapper {
     /**
      * 删除角色
      *
-     * @param id
+     * @param ids
      * @return
      */
     // TODO 事务待修改
     @Override
-    public int delete(List<Long> id) {
+    public int delete(List<Long> ids) {
         int rows = 0;
-        ApexDao dao = null;
         try {
             StringBuilder sql = new StringBuilder();
             sql.append("delete from CT_Rbac_Role where ID in ");
-            sql.append(SQLUtil.listToSQLList(id));
+            sql.append(SQLUtil.listToSQLList(ids));
 
-            dao = new ApexDao();
+            ApexDao dao = new ApexDao();
             dao.prepareStatement(sql.toString());
-            for (int i = 0; i < id.size(); i++) {
-                dao.setLong(i + 1, id.get(i));
+            for (int i = 0; i < ids.size(); i++) {
+                dao.setLong(i + 1, ids.get(i));
             }
             rows = dao.executeUpdate(getDataSource());
         } catch (SQLException e) {
             e.printStackTrace();
             logger.error(e.getMessage(), e);
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-        } finally {
-            closeResource(dao);
         }
         return rows;
     }

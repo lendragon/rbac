@@ -9,26 +9,26 @@ package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant;
  */
 public class CommonConstants {
     /**
-     * 请求接口的动作
+     * 请求接口的动作参数
      */
-    public static final String PARAM_QUERY = "action=query";
-    public static final String PARAM_ADD = "action=add";
-    public static final String PARAM_UPDATE = "action=update";
-    public static final String PARAM_DELETE = "action=delete";
+    public static final String PARAM_ACTION_QUERY = "action=query";
+    public static final String PARAM_ACTION_ADD = "action=add";
+    public static final String PARAM_ACTION_UPDATE = "action=update";
+    public static final String PARAM_ACTION_DELETE = "action=delete";
     /**
-     * 国际化响应信息
+     * 响应信息的国际化key
      */
-    public static final String I18N_USER_NO_REPEAT = "apexinfo.rbac.user.responseNoRepeat";
+    public static final String I18N_USER_ERROR_REPEAT_NO = "apexinfo.rbac.user.response.error.repeat.no";
 
-    public static final String I18N_USER_NAME_REPEAT = "apexinfo.rbac.user.responseDataError";
-
-    public static final String I18N_DATA_ERROR = "apexinfo.rbac.responseDataError";
-    public static final String I18N_ADD_SUCCESS = "apexinfo.rbac.responseAddSuccess";
-    public static final String I18N_UPDATE_SUCCESS = "apexinfo.rbac.responseUpdateSuccess";
-    public static final String I18N_DELETE_SUCCESS = "apexinfo.rbac.responseDeleteSuccess";
-    public static final String I18N_ADD_FAIL = "apexinfo.rbac.responseAddFail";
-    public static final String I18N_UPDATE_FAIL = "apexinfo.rbac.responseUpdateFail";
-    public static final String I18N_DELETE_FAIL = "apexinfo.rbac.responseDeleteFail";
+    public static final String I18N_USER_ERROR_REPEAT_NAME = "apexinfo.rbac.user.response.error.repeat.name";
+    public static final String I18N_ROLE_ERROR_REQUIRED = "apexinfo.rbac.role.response.error.required";
+    public static final String I18N_COMMON_ERROR_DATA = "apexinfo.rbac.common.response.error.data";
+    public static final String I18N_COMMON_SUCCESS_ADD = "apexinfo.rbac.common.response.success.add";
+    public static final String I18N_COMMON_SUCCESS_UPDATE = "apexinfo.rbac.common.response.success.update";
+    public static final String I18N_COMMON_SUCCESS_DELETE = "apexinfo.rbac.common.response.success.delete";
+    public static final String I18N_COMMON_FAIL_ADD = "apexinfo.rbac.common.response.fail.add";
+    public static final String I18N_COMMON_FAIL_UPDATE = "apexinfo.rbac.common.response.fail.update";
+    public static final String I18N_COMMON_FAIL_DELETE = "apexinfo.rbac.common.response.fail.delete";
 
     /**
      * 路由URI
@@ -47,4 +47,9 @@ public class CommonConstants {
     public static final String TABLE_RBAC_MENU = "CT_Rbac_Menu";
     public static final String TABLE_RBAC_USER_ROLE = "CT_Rbac_User_Role";
     public static final String TABLE_RBAC_ROLE_MENU = "CT_Rbac_Role_Menu";
+
+    /**
+     * 数据常量
+     */
+    public static final String DATA_USER_PASSWORD = "1234";
 }

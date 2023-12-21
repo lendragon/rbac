@@ -1,6 +1,7 @@
 package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model;
 
-import org.codehaus.jackson.annotate.JsonProperty;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Date;
 
@@ -12,12 +13,13 @@ import java.util.Date;
  * @Version 1.0
  */
 public class Role {
-    @JsonProperty("roleId")
     // 角色标识
     private Long id;
     // 角色名称
+    @JsonProperty(required = true)
     private String name;
     // 角色状态
+    @JsonProperty(required = true)
     private Integer state;
     // 角色描述
     private String description;
@@ -33,12 +35,13 @@ public class Role {
         this.state = state;
     }
 
-    public Role(Long id, String name, Date createTime, Date updateTime, String description) {
+    public Role(Long id, String name, Integer state, String description, Date createTime, Date updateTime) {
         this.id = id;
         this.name = name;
+        this.state = state;
+        this.description = description;
         this.createTime = createTime;
         this.updateTime = updateTime;
-        this.description = description;
     }
 
     public Integer getState() {

@@ -9,6 +9,7 @@ public interface IUserMapper {
     PageDTO<User> query(Integer pageNo, Integer pageSize, String keyword);
 
     PageDTO<User> queryById(Long id);
+    PageDTO<User> queryByRoleId(Long roleId);
 
     List<User> queryByNoOrName(String no, String name);
 

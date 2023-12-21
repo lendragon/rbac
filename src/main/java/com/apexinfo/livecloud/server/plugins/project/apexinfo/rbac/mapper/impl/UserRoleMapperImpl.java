@@ -1,6 +1,8 @@
 package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.impl;
 
+import com.apex.livebos.console.common.util.Util;
 import com.apex.util.ApexDao;
+import com.apex.util.ApexRowSet;
 import com.apexinfo.livecloud.server.core.GeneralMapper;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant.CommonConstants;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.util.SQLUtil;
@@ -8,6 +10,7 @@ import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.IUserR
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -19,22 +22,58 @@ import java.util.List;
  */
 public class UserRoleMapperImpl extends GeneralMapper implements IUserRoleMapper {
     /**
+     * 根据角色id列表查询用户id
+     * @param roleIds
+     * @return
+     */
+    @Override
+    public List<Long> queryUserIdByRoleIds(List<Long> roleIds) {
+        if (Util.isEmpty(roleIds)) {
+            return null;
+        }
+        List<Long> userIds = new ArrayList<>();
+        ApexRowSet rs = null;
+        try {
+            StringBuilder sql = new StringBuilder();
+            sql.append("select FUserId from CT_Rbac_User_Role where FRoleId in ");
+            sql.append(SQLUtil.listToSQLList(roleIds));
+            ApexDao dao = new ApexDao();
+            dao.prepareStatement(sql.toString());
+            for (int i = 0; i < roleIds.size(); i++) {
+                dao.setLong(i + 1, roleIds.get(i));
+            }
+            rs = dao.getRowSet(getDataSource());
+            while (rs.next()) {
+                userIds.add(rs.getLong("FUserId"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+        } finally {
+            closeResource(rs);
+        }
+        return userIds;
+    }
+
+    /**
      * 根据用户id新增对应的角色
      *
      * @param userId
-     * @param addId
+     * @param roleIds
      * @return
      */
     // TODO 事务待修改
     @Override
-    public int add(Long userId, List<Long> addId) {
+    public int addRoleList(Long userId, List<Long> roleIds) {
+        if (Util.isEmpty(roleIds)) {
+            return 1;
+        }
         int rows = 0;
-        ApexDao dao = null;
         try {
-            String sql = "insert into CT_Rbac_Role_Menu(ID, FRoleId, FMenuId) values(?, ?, ?) ";
-            dao = new ApexDao();
+            String sql = "insert into CT_Rbac_User_Role(ID, FUserId, FRoleId) values(?, ?, ?) ";
+            ApexDao dao = new ApexDao();
             dao.prepareStatement(sql);
-            for (Long roleId : addId) {
+            for (Long roleId : roleIds) {
                 long nextID = getNextID(CommonConstants.TABLE_RBAC_USER_ROLE);
                 dao.setLong(1, nextID);
                 dao.setLong(2, userId);
@@ -47,42 +86,75 @@ public class UserRoleMapperImpl extends GeneralMapper implements IUserRoleMapper
             e.printStackTrace();
             logger.error(e.getMessage(), e);
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-        } finally {
-            closeResource(dao);
         }
         return rows;
     }
 
     /**
-     * 根据用户id删除对应的角色
+     * 根据用户id新增对应的角色
      *
-     * @param userId
-     * @param deleteId
+     * @param roleId
+     * @param userIds
      * @return
      */
     // TODO 事务待修改
     @Override
-    public int deleteByIdList(Long userId, List<Long> deleteId) {
+    public int addUserList(Long roleId, List<Long> userIds) {
+        if (Util.isEmpty(userIds)) {
+            return 1;
+        }
         int rows = 0;
-        ApexDao dao = null;
+        try {
+            String sql = "insert into CT_Rbac_User_Role(ID, FUserId, FRoleId) values(?, ?, ?) ";
+            ApexDao dao = new ApexDao();
+            dao.prepareStatement(sql);
+            for (Long userId : userIds) {
+                long nextID = getNextID(CommonConstants.TABLE_RBAC_USER_ROLE);
+                dao.setLong(1, nextID);
+                dao.setLong(2, userId);
+                dao.setLong(3, roleId);
+
+                rows += dao.executeUpdate(getDataSource());
+            }
+        } catch (SQLException e) {
+            rows = 0;
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+        }
+        return rows;
+    }
+
+    /**
+     * 根据用户id删除对应的角色列表
+     *
+     * @param userId
+     * @param roleIds
+     * @return
+     */
+    // TODO 事务待修改
+    @Override
+    public int deleteByRoleIdList(Long userId, List<Long> roleIds) {
+        if (Util.isEmpty(roleIds)) {
+            return 1;
+        }
+        int rows = 0;
         try {
             StringBuilder sql = new StringBuilder();
             sql.append("delete from CT_Rbac_User_Role where FUserId = ? and FRoleId in ");
-            sql.append(SQLUtil.listToSQLList(deleteId));
+            sql.append(SQLUtil.listToSQLList(roleIds));
 
-            dao = new ApexDao();
+            ApexDao dao = new ApexDao();
             dao.prepareStatement(sql.toString());
             dao.setLong(1, userId);
-            for (int i = 0; i < deleteId.size(); i++) {
-                dao.setLong(i + 2, deleteId.get(i));
+            for (int i = 0; i < roleIds.size(); i++) {
+                dao.setLong(i + 2, roleIds.get(i));
             }
             rows = dao.executeUpdate(getDataSource());
         } catch (SQLException e) {
             e.printStackTrace();
             logger.error(e.getMessage(), e);
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-        } finally {
-            closeResource(dao);
         }
         return rows;
     }
@@ -90,31 +162,31 @@ public class UserRoleMapperImpl extends GeneralMapper implements IUserRoleMapper
     /**
      * 根据用户id除对应的所有用户_角色关联
      *
-     * @param userId
+     * @param userIds
      * @return
      */
     // TODO 事务待修改
     @Override
-    public int deleteByUserId(List<Long> userId) {
+    public int deleteByUserId(List<Long> userIds) {
+        if (Util.isEmpty(userIds)) {
+            return 1;
+        }
         int rows = 0;
-        ApexDao dao = null;
         try {
             StringBuilder sql = new StringBuilder();
             sql.append("delete from CT_Rbac_User_Role where FUserId in ");
-            sql.append(SQLUtil.listToSQLList(userId));
+            sql.append(SQLUtil.listToSQLList(userIds));
 
-            dao = new ApexDao();
+            ApexDao dao = new ApexDao();
             dao.prepareStatement(sql.toString());
-            for (int i = 0; i < userId.size(); i++) {
-                dao.setLong(i + 1, userId.get(i));
+            for (int i = 0; i < userIds.size(); i++) {
+                dao.setLong(i + 1, userIds.get(i));
             }
             rows = dao.executeUpdate(getDataSource());
         } catch (SQLException e) {
             e.printStackTrace();
             logger.error(e.getMessage(), e);
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-        } finally {
-            closeResource(dao);
         }
         return rows;
     }
@@ -122,31 +194,63 @@ public class UserRoleMapperImpl extends GeneralMapper implements IUserRoleMapper
     /**
      * 根据角色id删除对应的所有用户_角色关联
      *
-     * @param roleId
+     * @param roleIds
      * @return
      */
     // TODO 事务待修改
     @Override
-    public int deleteByRoleId(List<Long> roleId) {
+    public int deleteByRoleId(List<Long> roleIds) {
+        if (Util.isEmpty(roleIds)) {
+            return 1;
+        }
         int rows = 0;
-        ApexDao dao = null;
         try {
             StringBuilder sql = new StringBuilder();
             sql.append("delete from CT_Rbac_User_Role where FRoleId in ");
-            sql.append(SQLUtil.listToSQLList(roleId));
+            sql.append(SQLUtil.listToSQLList(roleIds));
 
-            dao = new ApexDao();
+            ApexDao dao = new ApexDao();
             dao.prepareStatement(sql.toString());
-            for (int i = 0; i < roleId.size(); i++) {
-                dao.setLong(i + 1, roleId.get(i));
+            for (int i = 0; i < roleIds.size(); i++) {
+                dao.setLong(i + 1, roleIds.get(i));
             }
             rows = dao.executeUpdate(getDataSource());
         } catch (SQLException e) {
             e.printStackTrace();
             logger.error(e.getMessage(), e);
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-        } finally {
-            closeResource(dao);
+        }
+        return rows;
+    }
+
+    /**
+     * 根据角色id删除对应的用户列表
+     *
+     * @param roleId
+     * @return
+     */
+    @Override
+    public int deleteByUserIdList(Long roleId, List<Long> userIds) {
+        if (Util.isEmpty(userIds)) {
+            return 1;
+        }
+        int rows = 0;
+        try {
+            StringBuilder sql = new StringBuilder();
+            sql.append("delete from CT_Rbac_User_Role where FRoleId = ? and FUserId in ");
+            sql.append(SQLUtil.listToSQLList(userIds));
+
+            ApexDao dao = new ApexDao();
+            dao.prepareStatement(sql.toString());
+            dao.setLong(1, roleId);
+            for (int i = 0; i < userIds.size(); i++) {
+                dao.setLong(i + 2, userIds.get(i));
+            }
+            rows = dao.executeUpdate(getDataSource());
+        } catch (SQLException e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
         }
         return rows;
     }

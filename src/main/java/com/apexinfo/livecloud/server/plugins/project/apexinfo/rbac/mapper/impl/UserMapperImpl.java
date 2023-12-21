@@ -38,21 +38,20 @@ public class UserMapperImpl extends GeneralMapper implements IUserMapper {
         pageDTO.setRecords(users);
         pageDTO.setPageNo(pageNo);
         pageDTO.setPageSize(pageSize);
-        ApexDao dao = null;
         ApexRowSet rs = null;
         try {
             StringBuilder sql = new StringBuilder();
-            sql.append("select ID, FNo, FName, FPassword, FSex, FBirthDay,");
-            sql.append(" FPhoneNum, FCreateTime, FUpdateTime ");
+            sql.append("select ID, FNo, FName, FSex, FBirthDay,");
+            sql.append(" FPhoneNum, FState, FCreateTime, FUpdateTime ");
             sql.append("from CT_Rbac_User where 1 = 1 ");
             // 模糊查询拼接SQL
             if (keyword != null && !keyword.isEmpty()) {
-                SQLUtil.likeContact(sql, "FNo", "FName", "FSex", "FBirthDay", "FPhoneNum");
+                SQLUtil.likeContact(sql, "FNo", "FName", "FSex", "FBirthDay", "FState", "FPhoneNum");
             }
-            dao = new ApexDao();
+            ApexDao dao = new ApexDao();
             dao.prepareStatement(sql.toString());
             if (keyword != null && !keyword.isEmpty()) {
-                SQLUtil.setLikeSQL(dao, keyword, 1, 5);
+                SQLUtil.setLikeSQL(dao, keyword, 1, 6);
             }
             rs = dao.getRowSet(getDataSource(), pageNo, pageSize, null);
             pageDTO.setTotal(rs.getCount());
@@ -61,10 +60,10 @@ public class UserMapperImpl extends GeneralMapper implements IUserMapper {
                 user.setId(rs.getLong("ID"));
                 user.setNo(rs.getString("FNo"));
                 user.setName(rs.getString("FName"));
-                user.setPassword(rs.getString("FPassword"));
-                user.setSex(rs.getLong("FSex"));
+                user.setSex(rs.getInt("FSex"));
                 user.setBirthDay(rs.getDate("FBirthDay"));
                 user.setPhoneNum(rs.getString("FPhoneNum"));
+                user.setState(rs.getInt("FState"));
                 user.setCreateTime(rs.getDate("FCreateTime"));
                 user.setUpdateTime(rs.getDate("FUpdateTime"));
                 users.add(user);
@@ -73,7 +72,7 @@ public class UserMapperImpl extends GeneralMapper implements IUserMapper {
             e.printStackTrace();
             logger.error(e.getMessage(), e);
         } finally {
-            closeResource(dao, rs);
+            closeResource(rs);
         }
         return pageDTO;
     }
@@ -89,15 +88,14 @@ public class UserMapperImpl extends GeneralMapper implements IUserMapper {
         PageDTO<User> pageDTO = new PageDTO<>();
         List<User> users = new ArrayList<>();
         pageDTO.setRecords(users);
-        ApexDao dao = null;
         ApexRowSet rs = null;
         try {
             StringBuilder sql = new StringBuilder();
             sql.append("select ID, FNo, FName, FPassword, FSex, FBirthDay,");
-            sql.append(" FPhoneNum, FCreateTime, FUpdateTime ");
+            sql.append("FPhoneNum, FState, FCreateTime, FUpdateTime ");
             sql.append("from CT_Rbac_User where ID = ? ");
 
-            dao = new ApexDao();
+            ApexDao dao = new ApexDao();
             dao.prepareStatement(sql.toString());
             dao.setLong(1, id);
             rs = dao.getRowSet(getDataSource());
@@ -108,9 +106,10 @@ public class UserMapperImpl extends GeneralMapper implements IUserMapper {
                 user.setNo(rs.getString("FNo"));
                 user.setName(rs.getString("FName"));
                 user.setPassword(rs.getString("FPassword"));
-                user.setSex(rs.getLong("FSex"));
+                user.setSex(rs.getInt("FSex"));
                 user.setBirthDay(rs.getDate("FBirthDay"));
                 user.setPhoneNum(rs.getString("FPhoneNum"));
+                user.setState(rs.getInt("FState"));
                 user.setCreateTime(rs.getDate("FCreateTime"));
                 user.setUpdateTime(rs.getDate("FUpdateTime"));
                 users.add(user);
@@ -119,7 +118,51 @@ public class UserMapperImpl extends GeneralMapper implements IUserMapper {
             e.printStackTrace();
             logger.error(e.getMessage(), e);
         } finally {
-            closeResource(dao, rs);
+            closeResource(rs);
+        }
+        return pageDTO;
+    }
+
+    /**
+     * 根据角色id查询用户
+     * @param roleId
+     * @return
+     */
+    @Override
+    public PageDTO<User> queryByRoleId(Long roleId) {
+        PageDTO<User> pageDTO = new PageDTO<>();
+        List<User> roles = new ArrayList<>();
+        pageDTO.setRecords(roles);
+        ApexRowSet rs = null;
+        try {
+            StringBuilder sql = new StringBuilder();
+            sql.append("select ID, FNo, FName, FSex, FBirthDay, FPhoneNum, FState, FCreateTime, FUpdateTime ");
+            sql.append("from CT_Rbac_User where ID in ");
+            sql.append("(select FUserId from CT_Rbac_User_Role where FRoleId = ?)");
+
+            ApexDao dao = new ApexDao();
+            dao.prepareStatement(sql.toString());
+            dao.setLong(1, roleId);
+            rs = dao.getRowSet(getDataSource());
+            pageDTO.setTotal(rs.getCount());
+            while (rs.next()) {
+                User user = new User();
+                user.setId(rs.getLong("ID"));
+                user.setNo(rs.getString("FNo"));
+                user.setName(rs.getString("FName"));
+                user.setSex(rs.getInt("FSex"));
+                user.setBirthDay(rs.getDate("FBirthDay"));
+                user.setPhoneNum(rs.getString("FPhoneNum"));
+                user.setState(rs.getInt("FState"));
+                user.setCreateTime(rs.getDate("FCreateTime"));
+                user.setUpdateTime(rs.getDate("FUpdateTime"));
+                roles.add(user);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+        } finally {
+            closeResource(rs);
         }
         return pageDTO;
     }
@@ -134,19 +177,17 @@ public class UserMapperImpl extends GeneralMapper implements IUserMapper {
     @Override
     public List<User> queryByNoOrName(String no, String name) {
         List<User> users = new ArrayList<>();
-        ApexDao dao = null;
         ApexRowSet rs = null;
         try {
-            String sql = "select ID, FNo, FName from CT_Rbac_User where FNo = ? or FName = ?";
+            String sql = "select FNo, FName from CT_Rbac_User where FNo = ? or FName = ?";
 
-            dao = new ApexDao();
+            ApexDao dao = new ApexDao();
             dao.prepareStatement(sql);
             dao.setString(1, no);
             dao.setString(2, name);
             rs = dao.getRowSet(getDataSource());
             while (rs.next()) {
                 User user = new User();
-                user.setId(rs.getLong("ID"));
                 user.setNo(rs.getString("FNo"));
                 user.setName(rs.getString("FName"));
                 users.add(user);
@@ -155,7 +196,7 @@ public class UserMapperImpl extends GeneralMapper implements IUserMapper {
             e.printStackTrace();
             logger.error(e.getMessage(), e);
         } finally {
-            closeResource(dao, rs);
+            closeResource(rs);
         }
         return users;
     }
@@ -169,18 +210,17 @@ public class UserMapperImpl extends GeneralMapper implements IUserMapper {
     @Override
     public int add(User user) {
         int rows = 0;
-        ApexDao dao = null;
         try {
             long nextId = getNextID(CommonConstants.TABLE_RBAC_USER);
             user.setId(nextId);
             StringBuilder sql = new StringBuilder();
-            sql.append("insert into CT_Rbac_User(ID, FNo, FName, FSex, FBirthDay, FPhoneNum, FCreateTime, FUpdateTime ");
+            sql.append("insert into CT_Rbac_User(ID, FNo, FName, FSex, FBirthDay, FPhoneNum, FState, FCreateTime, FUpdateTime ");
             if (user.getPassword() == null) {
-                sql.append(") values(?,?,?,?,?,?,?,?)");
+                sql.append(") values(?,?,?,?,?,?,?,?,?)");
             } else {
-                sql.append(", FPassword) values(?,?,?,?,?,?,?,?,?)");
+                sql.append(", FPassword) values(?,?,?,?,?,?,?,?,?,?)");
             }
-            dao = new ApexDao();
+            ApexDao dao = new ApexDao();
             dao.prepareStatement(sql.toString());
             dao.setLong(1, user.getId());
             dao.setString(2, user.getNo());
@@ -188,17 +228,16 @@ public class UserMapperImpl extends GeneralMapper implements IUserMapper {
             dao.setObject(4, user.getSex());
             dao.setObject(5, user.getBirthDay());
             dao.setString(6, user.getPhoneNum());
-            dao.setObject(7, user.getCreateTime());
-            dao.setObject(8, user.getUpdateTime());
+            dao.setInt(7, user.getState());
+            dao.setObject(8, user.getCreateTime());
+            dao.setObject(9, user.getUpdateTime());
             if (user.getPassword() != null) {
-                dao.setObject(9, user.getPassword());
+                dao.setObject(10, user.getPassword());
             }
             rows = dao.executeUpdate(getDataSource());
         } catch (SQLException e) {
             e.printStackTrace();
             logger.error(e.getMessage(), e);
-        } finally {
-            closeResource(dao);
         }
         return rows;
     }
@@ -212,35 +251,34 @@ public class UserMapperImpl extends GeneralMapper implements IUserMapper {
     @Override
     public int update(User user) {
         int rows = 0;
-        ApexDao dao = null;
         try {
             StringBuilder sql = new StringBuilder();
-            sql.append("update CT_Rbac_User set FNo = ?, FName = ?, FSex = ?, FBirthDay = ?, FPhoneNum = ?, FUpdateTime = ? ");
+            sql.append("update CT_Rbac_User set FNo = ?, FName = ?, FSex = ?,");
+            sql.append("FBirthDay = ?,FPhoneNum = ?, FState = ?, FUpdateTime = ? ");
             if (user.getPassword() != null) {
                 sql.append(", FPassword = ? ");
             }
             sql.append(" where ID = ?");
 
-            dao = new ApexDao();
+            ApexDao dao = new ApexDao();
             dao.prepareStatement(sql.toString());
             dao.setString(1, user.getNo());
             dao.setString(2, user.getName());
             dao.setObject(3, user.getSex());
             dao.setObject(4, user.getBirthDay());
             dao.setString(5, user.getPhoneNum());
-            dao.setObject(6, user.getUpdateTime());
+            dao.setInt(6, user.getState());
+            dao.setObject(7, user.getUpdateTime());
             if (user.getPassword() == null) {
-                dao.setLong(7, user.getId());
-            } else {
-                dao.setObject(7, user.getBirthDay());
                 dao.setLong(8, user.getId());
+            } else {
+                dao.setString(8, user.getPassword());
+                dao.setLong(9, user.getId());
             }
             rows = dao.executeUpdate(getDataSource());
         } catch (SQLException e) {
             e.printStackTrace();
             logger.error(e.getMessage(), e);
-        } finally {
-            closeResource(dao);
         }
         return rows;
     }
@@ -248,30 +286,27 @@ public class UserMapperImpl extends GeneralMapper implements IUserMapper {
     /**
      * 删除用户
      *
-     * @param id
+     * @param ids
      * @return
      */
     // TODO 事务待修改
     @Override
-    public int delete(List<Long> id) {
+    public int delete(List<Long> ids) {
         int rows = 0;
-        ApexDao dao = null;
         try {
             StringBuilder sql = new StringBuilder();
             sql.append("delete from CT_Rbac_User where ID in ");
-            sql.append(SQLUtil.listToSQLList(id));
-            dao = new ApexDao();
+            sql.append(SQLUtil.listToSQLList(ids));
+            ApexDao dao = new ApexDao();
             dao.prepareStatement(sql.toString());
-            for (int i = 0; i < id.size(); i++) {
-                dao.setLong(i + 1, id.get(i));
+            for (int i = 0; i < ids.size(); i++) {
+                dao.setLong(i + 1, ids.get(i));
             }
             rows = dao.executeUpdate(getDataSource());
         } catch (SQLException e) {
             e.printStackTrace();
             logger.error(e.getMessage(), e);
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-        } finally {
-            closeResource(dao);
         }
         return rows;
     }

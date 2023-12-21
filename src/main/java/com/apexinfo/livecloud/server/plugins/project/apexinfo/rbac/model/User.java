@@ -1,6 +1,7 @@
 package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model;
 
-import org.codehaus.jackson.annotate.JsonProperty;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Date;
 
@@ -13,21 +14,23 @@ import java.util.Date;
  */
 public class User {
     // 用户标识
-    @JsonProperty("userId")
     private Long id;
     // 用户编号
+    @JsonProperty(required = true)
     private String no;
     // 用户名
+    @JsonProperty(required = true)
     private String name;
     // 密码
     private String password;
     // 性别
-    private Long sex;
+    private Integer sex;
     // 生日
     private Date birthDay;
     // 手机号
     private String phoneNum;
     // 角色状态
+    @JsonProperty(required = true)
     private Integer state;
     // 创建时间
     private Date createTime;
@@ -37,7 +40,7 @@ public class User {
     public User() {
     }
 
-    public User(Long id, String no, String name, String password, Long sex, Date birthDay, String phoneNum, Date createTime, Date updateTime) {
+    public User(Long id, String no, String name, String password, Integer sex, Date birthDay, String phoneNum, Integer state, Date createTime, Date updateTime) {
         this.id = id;
         this.no = no;
         this.name = name;
@@ -45,6 +48,7 @@ public class User {
         this.sex = sex;
         this.birthDay = birthDay;
         this.phoneNum = phoneNum;
+        this.state = state;
         this.createTime = createTime;
         this.updateTime = updateTime;
     }
@@ -89,11 +93,11 @@ public class User {
         this.password = password;
     }
 
-    public Long getSex() {
+    public Integer getSex() {
         return sex;
     }
 
-    public void setSex(Long sex) {
+    public void setSex(Integer sex) {
         this.sex = sex;
     }
 

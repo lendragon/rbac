@@ -88,10 +88,10 @@
   function deleteMenus(menusId) {
     let data = {};
     if (typeof menusId === "number") {
-      data.id = [];
-      data.id.push(menusId);
+      data.ids = [];
+      data.ids.push(menusId);
     } else {
-      data.id = menusId;
+      data.ids = menusId;
     }
     let param = $.param(data).replaceAll("%5B%5D", "");
     $.post(ROUTE_MENU + "?action=delete", param, (res) => {
@@ -179,6 +179,24 @@
           name: "url",
           required: false,
           placeholder: "菜单路径",
+        },
+        {
+          label: "菜单状态",
+          type: "radio",
+          name: "state",
+          required: true,
+          options: [
+            {
+              name: "正常",
+              value: "0",
+              checked: true,
+            },
+            {
+              name: "禁用",
+              value: "1",
+            },
+          ],
+          placeholder: "菜单状态",
         },
         {
           label: "菜单描述",

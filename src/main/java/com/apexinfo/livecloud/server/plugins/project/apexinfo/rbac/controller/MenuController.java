@@ -1,11 +1,11 @@
 package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.controller;
 
+import com.apex.livebos.console.common.util.Util;
 import com.apexinfo.livecloud.server.common.exporter.Response;
 import com.apexinfo.livecloud.server.core.Core;
 import com.apexinfo.livecloud.server.core.web.AbstractController;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant.CommonConstants;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.Menu;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.MenuVO;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.service.MenuService;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -34,16 +34,18 @@ public class MenuController extends AbstractController {
      * @return
      */
     @RequestMapping(value = CommonConstants.ROUTE_URI_MENU,
-            params = CommonConstants.PARAM_QUERY, method = RequestMethod.GET)
+            params = CommonConstants.PARAM_ACTION_QUERY, method = RequestMethod.GET)
     @ResponseBody
     public Response query(Long roleId, Long menuId, Long userId,
                           HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
-        if (roleId != null && roleId <= 0 || menuId != null && menuId <= 0 ||
-                userId != null && userId <= 0) {
-            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_USER_NAME_REPEAT));
+
+        if ((roleId != null && roleId <= 0) ||
+                (menuId != null && menuId <= 0) ||
+                (userId != null && userId <= 0)) {
+            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_ERROR_DATA));
         }
-        List<MenuVO> menusTree = MenuService.getInstance().queryToTree(roleId, menuId, userId);
+        List<Menu> menusTree = MenuService.getInstance().queryToTree(roleId, menuId, userId);
         return Response.ofSuccess(menusTree);
     }
 
@@ -56,19 +58,15 @@ public class MenuController extends AbstractController {
      * @return
      */
     @RequestMapping(value = CommonConstants.ROUTE_URI_MENU,
-            params = CommonConstants.PARAM_ADD, method = RequestMethod.POST)
+            params = CommonConstants.PARAM_ACTION_ADD, method = RequestMethod.POST)
     @ResponseBody
     public Response add(@RequestBody Menu menu, HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
-        if (menu == null || menu.getName() == null ||
-                menu.getLevel() == null || menu.getParentId() == null) {
-            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_USER_NAME_REPEAT));
-        }
         int rows = MenuService.getInstance().add(menu);
         if (rows == 1) {
-            return Response.ofSuccess(Core.i18n().getValue(CommonConstants.I18N_ADD_SUCCESS, null));
+            return Response.ofSuccess(Core.i18n().getValue(CommonConstants.I18N_COMMON_SUCCESS_ADD, null));
         }
-        return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_ADD_FAIL));
+        return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_FAIL_ADD));
     }
 
     /**
@@ -80,41 +78,40 @@ public class MenuController extends AbstractController {
      * @return
      */
     @RequestMapping(value = CommonConstants.ROUTE_URI_MENU,
-            params = CommonConstants.PARAM_UPDATE, method = RequestMethod.POST)
+            params = CommonConstants.PARAM_ACTION_UPDATE, method = RequestMethod.POST)
     @ResponseBody
     public Response update(@RequestBody Menu menu, HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
-        if (menu == null || menu.getId() == null || menu.getId() <= 0 || menu.getName() == null ||
-                menu.getOrder() == null || menu.getLevel() == null || menu.getParentId() == null) {
-            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_USER_NAME_REPEAT));
+        if (Util.isEmpty(menu.getId()) || menu.getId() <= 0) {
+            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_ERROR_DATA));
         }
         int rows = MenuService.getInstance().update(menu);
         if (rows == 1) {
-            return Response.ofSuccess(Core.i18n().getValue(CommonConstants.I18N_UPDATE_SUCCESS), null);
+            return Response.ofSuccess(Core.i18n().getValue(CommonConstants.I18N_COMMON_SUCCESS_UPDATE), null);
         }
-        return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_UPDATE_FAIL));
+        return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_FAIL_UPDATE));
     }
 
     /**
      * 删除菜单
      *
-     * @param id
+     * @param ids
      * @param request
      * @param response
      * @return
      */
     @RequestMapping(value = CommonConstants.ROUTE_URI_MENU,
-            params = CommonConstants.PARAM_DELETE, method = RequestMethod.POST)
+            params = CommonConstants.PARAM_ACTION_DELETE, method = RequestMethod.POST)
     @ResponseBody
-    public Response delete(@RequestParam List<Long> id, HttpServletRequest request, HttpServletResponse response) {
+    public Response delete(@RequestParam List<Long> ids, HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
-        if (id == null) {
-            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_USER_NAME_REPEAT));
+        if (Util.isEmpty(ids)) {
+            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_ERROR_DATA));
         }
-        int rows = MenuService.getInstance().delete(id);
+        int rows = MenuService.getInstance().delete(ids);
         if (rows > 0) {
-            return Response.ofSuccess(Core.i18n().getValue(CommonConstants.I18N_DELETE_SUCCESS), null);
+            return Response.ofSuccess(Core.i18n().getValue(CommonConstants.I18N_COMMON_SUCCESS_DELETE), null);
         }
-        return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_DELETE_FAIL));
+        return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_FAIL_DELETE));
     }
 }

@@ -1,5 +1,6 @@
 package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.controller;
 
+import com.apex.livebos.console.common.util.Util;
 import com.apexinfo.livecloud.server.common.exporter.Response;
 import com.apexinfo.livecloud.server.core.Core;
 import com.apexinfo.livecloud.server.core.web.AbstractController;
@@ -8,6 +9,7 @@ import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.Relativ
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.Role;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.PageDTO;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.service.RoleService;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.service.UserRoleService;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,7 +39,7 @@ public class RoleController extends AbstractController {
      * @return
      */
     @RequestMapping(value = CommonConstants.ROUTE_URI_ROLE,
-            params = CommonConstants.PARAM_QUERY, method = RequestMethod.GET)
+            params = CommonConstants.PARAM_ACTION_QUERY, method = RequestMethod.GET)
     @ResponseBody
     public Response query(Integer pageNo, Integer pageSize, String keyword, Long userId, Long roleId,
                           HttpServletRequest request, HttpServletResponse response) {
@@ -46,7 +48,7 @@ public class RoleController extends AbstractController {
                 (pageSize != null && pageSize < 0) ||
                 (userId != null && userId <= 0) ||
                 (roleId != null && roleId <= 0)) {
-            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_USER_NAME_REPEAT));
+            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_ERROR_DATA));
         }
         PageDTO<Role> pageDTO = RoleService.getInstance().query(pageNo, pageSize, keyword, userId, roleId);
         return Response.ofSuccess(pageDTO);
@@ -61,18 +63,15 @@ public class RoleController extends AbstractController {
      * @return
      */
     @RequestMapping(value = CommonConstants.ROUTE_URI_ROLE,
-            params = CommonConstants.PARAM_ADD, method = RequestMethod.POST)
+            params = CommonConstants.PARAM_ACTION_ADD, method = RequestMethod.POST)
     @ResponseBody
     public Response add(@RequestBody Role role, HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
-        if (role == null || role.getName() == null) {
-            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_USER_NAME_REPEAT));
-        }
         int rows = RoleService.getInstance().add(role);
         if (rows == 1) {
-            return Response.ofSuccess(Core.i18n().getValue(CommonConstants.I18N_ADD_SUCCESS), null);
+            return Response.ofSuccess(Core.i18n().getValue(CommonConstants.I18N_COMMON_SUCCESS_ADD), null);
         }
-        return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_ADD_FAIL));
+        return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_FAIL_ADD));
     }
 
     /**
@@ -84,18 +83,42 @@ public class RoleController extends AbstractController {
      * @return
      */
     @RequestMapping(value = CommonConstants.ROUTE_URI_ROLE,
-            params = CommonConstants.PARAM_UPDATE, method = RequestMethod.POST)
+            params = CommonConstants.PARAM_ACTION_UPDATE, method = RequestMethod.POST)
     @ResponseBody
     public Response update(@RequestBody Role role, HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
-        if (role == null || role.getId() == null || role.getId() <= 0 || role.getName() == null) {
-            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_USER_NAME_REPEAT));
+        if (Util.isEmpty(role.getId()) || role.getId() <= 0) {
+            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_ERROR_DATA));
         }
         int rows = RoleService.getInstance().update(role);
         if (rows == 1) {
-            return Response.ofSuccess(Core.i18n().getValue(CommonConstants.I18N_UPDATE_SUCCESS), null);
+            return Response.ofSuccess(Core.i18n().getValue(CommonConstants.I18N_COMMON_SUCCESS_UPDATE), null);
         }
-        return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_UPDATE_FAIL));
+        return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_FAIL_UPDATE));
+    }
+
+    /**
+     * 给用户授权角色
+     *
+     * @param relativeDTO
+     * @param request
+     * @param response
+     * @return
+     */
+    @RequestMapping(value = CommonConstants.ROUTE_URI_USER_ROLE,
+            params = CommonConstants.PARAM_ACTION_UPDATE, method = RequestMethod.POST)
+    @ResponseBody
+    public Response updateUserRole(@RequestBody RelativeDTO relativeDTO,
+                                    HttpServletRequest request, HttpServletResponse response) {
+        setJsonResponse(request, response);
+        if (relativeDTO.getRoleId() <= 0) {
+            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_ERROR_DATA));
+        }
+        int rows = RoleService.getInstance().updateUserRole(relativeDTO);
+        if (rows > 0) {
+            return Response.ofSuccess(Core.i18n().getValue(CommonConstants.I18N_COMMON_SUCCESS_UPDATE), null);
+        }
+        return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_FAIL_UPDATE));
     }
 
     /**
@@ -107,41 +130,47 @@ public class RoleController extends AbstractController {
      * @return
      */
     @RequestMapping(value = CommonConstants.ROUTE_URI_ROLE_MENU,
-            params = CommonConstants.PARAM_UPDATE, method = RequestMethod.POST)
+            params = CommonConstants.PARAM_ACTION_UPDATE, method = RequestMethod.POST)
     @ResponseBody
     public Response updateRoleMenus(@RequestBody RelativeDTO relativeDTO,
                                     HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
-        if (relativeDTO == null || relativeDTO.getId() <= 0) {
-            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_USER_NAME_REPEAT));
+        if (relativeDTO.getRoleId() <= 0) {
+            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_ERROR_DATA));
         }
         int rows = RoleService.getInstance().updateRoleMenus(relativeDTO);
         if (rows > 0) {
-            return Response.ofSuccess(Core.i18n().getValue(CommonConstants.I18N_UPDATE_SUCCESS), null);
+            return Response.ofSuccess(Core.i18n().getValue(CommonConstants.I18N_COMMON_SUCCESS_UPDATE), null);
         }
-        return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_UPDATE_FAIL));
+        return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_FAIL_UPDATE));
     }
 
     /**
      * 删除角色
      *
-     * @param id
+     * @param ids
      * @param request
      * @param response
      * @return
      */
     @RequestMapping(value = CommonConstants.ROUTE_URI_ROLE,
-            params = CommonConstants.PARAM_DELETE, method = RequestMethod.POST)
+            params = CommonConstants.PARAM_ACTION_DELETE, method = RequestMethod.POST)
     @ResponseBody
-    public Response delete(@RequestParam List<Long> id, HttpServletRequest request, HttpServletResponse response) {
+    public Response delete(@RequestParam List<Long> ids, HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
-        if (id == null) {
-            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_USER_NAME_REPEAT));
+        if (Util.isEmpty(ids)) {
+            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_ERROR_DATA));
         }
-        int rows = RoleService.getInstance().delete(id);
+        // 如果角色有用户关联, 则不能删除
+        List<Long> userIds = UserRoleService.getInstance().queryByRoleIds(ids);
+        if (Util.isNotEmpty(userIds)) {
+            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_ROLE_ERROR_REQUIRED));
+        }
+
+        int rows = RoleService.getInstance().delete(ids);
         if (rows > 0) {
-            return Response.ofSuccess(Core.i18n().getValue(CommonConstants.I18N_DELETE_SUCCESS), null);
+            return Response.ofSuccess(Core.i18n().getValue(CommonConstants.I18N_COMMON_SUCCESS_DELETE), null);
         }
-        return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_DELETE_FAIL));
+        return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_FAIL_DELETE));
     }
 }

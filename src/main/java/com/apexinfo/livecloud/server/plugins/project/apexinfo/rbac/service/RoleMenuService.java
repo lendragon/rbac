@@ -32,42 +32,42 @@ public class RoleMenuService {
      * 根据角色id新增对应的菜单
      *
      * @param roleId
-     * @param addId
+     * @param menuIds
      * @return
      */
-    int add(Long roleId, List<Long> addId) {
-        return roleMenuMapper.add(roleId, addId);
+    int addMenuList(Long roleId, List<Long> menuIds) {
+        return roleMenuMapper.addMenuList(roleId, menuIds);
     }
 
     /**
      * 根据角色id删除对应的菜单
      *
      * @param roleId
-     * @param deleteId
+     * @param menuIds
      * @return
      */
-    int deleteByList(Long roleId, List<Long> deleteId) {
-        return roleMenuMapper.deleteByList(roleId, deleteId);
+    int deleteByMenuList(Long roleId, List<Long> menuIds) {
+        return roleMenuMapper.deleteByMenuList(roleId, menuIds);
     }
 
     /**
      * 根据角色id删除对应的所有角色_菜单关联
      *
-     * @param roleId
+     * @param roleIds
      * @return
      */
-    int deleteByRoleId(List<Long> roleId) {
-        return roleMenuMapper.deleteByRoleId(roleId);
+    int deleteByRoleId(List<Long> roleIds) {
+        return roleMenuMapper.deleteByRoleId(roleIds);
     }
 
     /**
      * 根据菜单id删除对应的所有角色_菜单关联
      *
-     * @param menuId
+     * @param menuIds
      * @return
      */
-    int deleteByMenuId(List<Long> menuId) {
-        return roleMenuMapper.deleteByMenuId(menuId);
+    int deleteByMenuId(List<Long> menuIds) {
+        return roleMenuMapper.deleteByMenuId(menuIds);
     }
 }
 

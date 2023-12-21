@@ -31,25 +31,57 @@ public class UserRoleService {
     }
 
     /**
-     * 根据用户id新增对应的角色
+     * 根据角色id列表查询是否有用户关联
      *
-     * @param userId
-     * @param addId
+     * @param roleIds
      * @return
      */
-    int add(Long userId, List<Long> addId) {
-        return userRoleMapper.add(userId, addId);
+    public List<Long> queryByRoleIds(List<Long> roleIds) {
+        return userRoleMapper.queryUserIdByRoleIds(roleIds);
     }
 
     /**
-     * 根据用户id删除对应的角色
+     * 根据用户id新增对应的角色列表
+     *
+     * @param roleId
+     * @param userIds
+     * @return
+     */
+    public int addUserList(Long roleId, List<Long> userIds) {
+        return userRoleMapper.addUserList(roleId, userIds);
+    }
+
+    /**
+     * 根据角色id新增对应的用户列表
+     *
+     * @param userId
+     * @param roleIds
+     * @return
+     */
+    public int addRoleList(Long userId, List<Long> roleIds) {
+        return userRoleMapper.addRoleList(userId, roleIds);
+    }
+
+    /**
+     * 根据用户id删除对应的角色列表
      *
      * @param userId
      * @param deleteId
      * @return
      */
-    int deleteByIdList(Long userId, List<Long> deleteId) {
-        return userRoleMapper.deleteByIdList(userId, deleteId);
+    public int deleteByRoleIdList(Long userId, List<Long> deleteId) {
+        return userRoleMapper.deleteByRoleIdList(userId, deleteId);
+    }
+
+    /**
+     * 根据角色id删除对应的用户列表
+     *
+     * @param userId
+     * @param deleteId
+     * @return
+     */
+    public int deleteByUserIdList(Long userId, List<Long> deleteId) {
+        return userRoleMapper.deleteByUserIdList(userId, deleteId);
     }
 
     /**
@@ -58,7 +90,7 @@ public class UserRoleService {
      * @param userId
      * @return
      */
-    int deleteByUserId(List<Long> userId) {
+    public int deleteByUserId(List<Long> userId) {
         return userRoleMapper.deleteByUserId(userId);
     }
 
@@ -68,7 +100,7 @@ public class UserRoleService {
      * @param roleId
      * @return
      */
-    int deleteByRoleId(List<Long> roleId) {
+    public int deleteByRoleId(List<Long> roleId) {
         return userRoleMapper.deleteByRoleId(roleId);
     }
 }

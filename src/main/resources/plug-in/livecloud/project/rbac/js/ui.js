@@ -169,12 +169,12 @@ function searchFormEvent(queryFun) {
 
 /* ===== 分页组件 ===== */
 // 创建分页
-function createPageBtn(total, disLastNext, queryFunName) {
+function createPageBtn(total, disLastNext, queryFunName, ulId = "pageBtnUl", lastId = "lastPageBtn", nextId = "nextPageBtn", ) {
   total = total < 1 ? 1 : total;
   let btnHtml = "";
   if (disLastNext) {
     btnHtml += `
-      <li id="lastPageBtn">
+      <li id="${lastId}">
         <a href="#" aria-label="Previous">
           <span aria-hidden="true">&laquo;</span>
         </a>
@@ -189,17 +189,21 @@ function createPageBtn(total, disLastNext, queryFunName) {
   }
   if (disLastNext) {
     btnHtml += `
-      <li id="nextPageBtn">
+      <li id="${lastId}">
         <a href="#" aria-label="Next">
           <span aria-hidden="true">&raquo;</span>
         </a>
       </li>`
   }
-  $("#pageBtnUl").html(btnHtml);
+  $(`#${ulId}`).html(btnHtml);
   $($(".pageBtn")[pageNo - 1]).addClass("active")
   // 绑定监听事件
-  $("#nextPageBtn").click(() => {nextTogglePageBtn(window[queryFunName])});
-  $("#lastPageBtn").click(() => {lastTogglePageBtn(window[queryFunName])});
+  $(`#${nextId}`).click(() => {
+    nextTogglePageBtn(window[queryFunName])
+  });
+  $(`#${lastId}`).click(() => {
+    lastTogglePageBtn(window[queryFunName])
+  });
 }
 
 function togglePageBtn(event, pageNoTmp, queryFun) {
@@ -234,7 +238,7 @@ function lastTogglePageBtn(queryFun) {
 }
 
 
-/* ===== 自定义创建表单组件 ===== */
+/* ===== 自定义创建表单模态框组件 ===== */
 function createFormBox(formId, title, formData, size, submitFun, btnName, createdFun) {
   // 创建表单html
   let formHtml = createFormHtml(formId, formData, btnName);
@@ -352,7 +356,7 @@ function createFormHtml(formId, formArr, btnName = "确定") {
       elem.options.forEach((option) => {
         formHtml += `
           <label class="${elem.type}-inline">
-            <input type="${elem.type}" name="${elem.name}" value="${option.value}" ${option.checked ? "checked" : ""}> ${option.name}
+            <input type="${elem.type}" name="${elem.name}" value="${option.value}" ${option.checked ? "checked" : ""} ${elem.deisabled ? "disabled" : ""}> ${option.name}
           </label>`
       })
     } else if (elem.type === "textarea") {
@@ -425,13 +429,14 @@ function createTree(id, data, hasBtn = true, hasCheckBox = true, hasDetail = tru
     data: treeData,
     showCheckbox: hasCheckBox,
   });
+  $(`#${id}`).treeview('expandAll');
 }
 
 function convertToTreeData(data, hasBtn, hasCheckBox = true, detailBtn = true, addBtn = true, deleteBtn = true) {
   return data.map((item) => ({
-    text: (hasCheckBox ? `<input type="hidden" value="${item.menu.id}" parentId="${item.menu.parentId}">` : "") +
-      item.menu.name + `<span class="label label-info margin-5">${item.children.length}</span>` +
-      (hasBtn ? treeBtnHtml(item.menu, detailBtn, addBtn, deleteBtn) : ""),
+    text: (hasCheckBox ? `<input type="hidden" value="${item.id}" parentId="${item.parentId}">` : "") +
+      item.name + `<span class="label label-info margin-5">${item.children.length}</span>` +
+      (hasBtn ? treeBtnHtml(item, detailBtn, addBtn, deleteBtn) : ""),
     nodes: item.children.length >= 1 ? convertToTreeData(item.children, hasBtn, hasCheckBox, detailBtn, addBtn, deleteBtn) : null,
 
   }));
@@ -475,7 +480,7 @@ function createTable(selector, menuName, data, hasBtn = true, btnDataIndex = 0) 
   data.forEach((items) => {
     displayHtml +=
       `<tr>
-        <td><input type="checkbox" class="select-row" /></td>
+        <td><input type="checkbox" class="select-row" value="${items[0]}" /></td>
         <th scope="row">${items[0]}</th>`;
     for (let i = 1; i < items.length; i++) {
       displayHtml += `<td>${items[i]}</td>`;
@@ -493,7 +498,7 @@ function createTable(selector, menuName, data, hasBtn = true, btnDataIndex = 0) 
         displayHtml +=
           `<button
             class="btn btn-link btn-no-underline btn-text-size"
-            onclick="userRoleDetail(${items[btnDataIndex]})"
+            onclick="userQueryRole(${items[btnDataIndex]})"
           >
             角色
           </button>
@@ -506,6 +511,12 @@ function createTable(selector, menuName, data, hasBtn = true, btnDataIndex = 0) 
       } else if (menuName === "role") {
         displayHtml +=
           `<button
+            class="btn btn-link btn-no-underline btn-text-size"
+            onclick="roleQueryUser(${items[btnDataIndex]})"
+          >
+            用户
+          </button>
+          <button
             class="btn btn-link btn-no-underline btn-text-size"
             onclick="roleMenuDetail(${items[btnDataIndex]})"
           >
@@ -526,6 +537,8 @@ function createTable(selector, menuName, data, hasBtn = true, btnDataIndex = 0) 
 
   });
   $(selector).html(displayHtml);
+
+  // 创建分页组件
 }
 
 // 首字母大写
@@ -616,6 +629,23 @@ function menuDetailFormBox(menu, readonly = false) {
         disabled: readonly
       },
       {
+        label: "菜单状态",
+        type: "radio",
+        name: "state",
+        required: true,
+        options: [{
+            name: "正常",
+            value: "0",
+            checked: true
+          },
+          {
+            name: "禁用",
+            value: "1",
+          },
+        ],
+        placeholder: "菜单状态",
+      },
+      {
         label: "菜单描述",
         type: "textarea",
         name: "description",
@@ -655,4 +685,49 @@ function menuDetailFormBox(menu, readonly = false) {
     },
     "修改"
   );
+}
+
+/* ===== 自定义创建表格模态框组件 ===== */
+function createTableBox(tableId, title, tableHead, tableData, confirmFun, createdFun) {
+  // 创建表头html
+  let tableHtml =
+    `<table class="table table-striped table-hover">
+      <thead>
+        <tr><th></th>`;
+  tableHead.forEach((item) => {
+    tableHtml += `<th>${item}</th>`
+  });
+  tableHtml +=
+    `</tr>
+      </thead>
+      <tbody id="${tableId}"></tbody>
+    </table>
+    <nav aria-label="Page navigation">
+      <ul id="tableBtnUl" class="pagination"></ul>
+    </nav>
+    <div class="col-sm-offset-8 col-sm-3 btn-group-box">
+          <button id="cancleBtn" type="button" class="btn btn-primary">取消</button>
+          <button id="confirmBtn" type="button" class="btn btn-primary">确定</button>
+    </div>`;
+  // 展示确认框
+  let confirmModal = confirmBox(title, tableHtml, 1, false, false, null, null, () => {
+    // 展示表格数据
+    createTable(`#${tableId}`, null, tableData, false);
+    // 为按钮绑定事件
+    $("#confirmBtn").click(() => {
+      confirmFun(() => {
+        $(confirmModal).modal("hide");
+      });
+    });
+    $("#cancleBtn").click(() => {
+      $(confirmModal).modal("hide");
+    });
+    // 创建分页组件
+    createPageBtn(1, true, "queryUsers", "tableBtnUl", "TableLastPageBtn", "TableNextPageBtn");
+  });
+
+  // 表格创建完成后事件
+  if (typeof createdFun === "function") {
+    createdFun();
+  }
 }
