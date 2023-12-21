@@ -540,7 +540,7 @@
   }
 
   function menuDetail(menuId) {
-    $.get(ROUTE_MENU + "?action=query", "menuId=" + menuId, (res) => {
+    $.get(ROUTE_MENU + "?action=query", "id=" + menuId, (res) => {
       if (!res.success) {
         failMessageFloat(res.msg);
         return;

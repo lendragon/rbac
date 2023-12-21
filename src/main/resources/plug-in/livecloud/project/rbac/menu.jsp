@@ -48,12 +48,12 @@
 
   // 查看菜单详情
   function menuDetail(menuId) {
-    $.get(ROUTE_MENU + "?action=query", "menuId=" + menuId, (res) => {
+    $.get(ROUTE_MENU + "?action=query", "id=" + menuId, (res) => {
       if (!res.success) {
         failMessageFloat(res.msg);
         return;
       }
-      menu = res.data[0].menu;
+      menu = res.data[0];
       menuDetailFormBox(menu);
     });
   }
@@ -148,7 +148,7 @@
           name: "order",
           required: true,
           placeholder: "菜单显示顺序",
-          reg: "^[1-9]\d*$",
+          reg: "^$|^[1-9]\\d*$",
           regTitle: "请输入有效数字",
         },
         {
@@ -156,7 +156,7 @@
           type: "number",
           name: "level",
           required: true,
-          reg: "^[1-9]\d*$",
+          reg: "^$|^[1-9]\\d*$",
           regTitle: "请输入有效数字",
           placeholder: "菜单层级",
           value: level,
@@ -166,8 +166,8 @@
           label: "父菜单id",
           type: "number",
           name: "parentId",
-          required: false,
-          reg: "^[1-9]\d*$",
+          required: true,
+          reg: "^$|^[1-9]\\d*$",
           regTitle: "请输入有效数字",
           placeholder: "父菜单id",
           value: parentId,

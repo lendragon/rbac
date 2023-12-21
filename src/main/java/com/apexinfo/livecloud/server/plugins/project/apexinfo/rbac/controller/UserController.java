@@ -110,30 +110,6 @@ public class UserController extends AbstractController {
         return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_FAIL_UPDATE));
     }
 
-//    /**
-//     * 修改用户的角色
-//     *
-//     * @param relativeDTO
-//     * @param request
-//     * @param response
-//     * @return
-//     */
-//    @RequestMapping(value = CommonConstants.ROUTE_URI_USER_ROLE,
-//            params = CommonConstants.PARAM_UPDATE, method = RequestMethod.POST)
-//    @ResponseBody
-//    public Response updateUserRoles(@RequestBody RelativeDTO relativeDTO,
-//                                    HttpServletRequest request, HttpServletResponse response) {
-//        setJsonResponse(request, response);
-//        if (relativeDTO == null || relativeDTO.getId() == null || relativeDTO.getId() <= 0) {
-//            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_DATA_ERROR));
-//        }
-//        int rows = UserService.getInstance().updateUserRoles(relativeDTO);
-//        if (rows > 0) {
-//            return Response.ofSuccess(Core.i18n().getValue(CommonConstants.I18N_UPDATE_SUCCESS), null);
-//        }
-//        return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_UPDATE_FAIL));
-//    }
-
     /**
      * 删除用户
      *

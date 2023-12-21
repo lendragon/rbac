@@ -37,16 +37,16 @@ public class MenuService {
      * 查询菜单树 / 根据角色id查询菜单树
      *
      * @param roleId
-     * @param menuId
+     * @param id
      * @param userId
      * @return
      */
-    public List<Menu> queryToTree(Long roleId, Long menuId, Long userId) {
+    public List<Menu> queryToTree(Long id, Long roleId, Long userId) {
         List<Menu> menusTree = new ArrayList<>();
         List<Menu> menuList = null;
-        if (menuId != null) {
+        if (id != null) {
             // 根据菜单id查询菜单
-            menuList = menuMapper.queryById(menuId);
+            menuList = menuMapper.queryById(id);
             menusTree.add(menuList.get(0));
         } else if (roleId != null) {
             // 根据角色id查询菜单
@@ -59,7 +59,7 @@ public class MenuService {
             menuList = menuMapper.query();
         }
 
-        if (menuId == null) {
+        if (id == null) {
             // 构建菜单树
             for (Menu menu : menuList) {
                 // 根节点的 level 为 1
@@ -121,7 +121,7 @@ public class MenuService {
      * @param ids
      * @return
      */
-    //TODO 事务待修改
+    // TODO 事务待修改
     public int delete(List<Long> ids) {
         // 删除角色_菜单关联表
         RoleMenuService.getInstance().deleteByMenuId(ids);

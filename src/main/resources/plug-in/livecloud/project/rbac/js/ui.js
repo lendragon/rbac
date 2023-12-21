@@ -189,7 +189,7 @@ function createPageBtn(total, disLastNext, queryFunName, ulId = "pageBtnUl", las
   }
   if (disLastNext) {
     btnHtml += `
-      <li id="${lastId}">
+      <li id="${nextId}">
         <a href="#" aria-label="Next">
           <span aria-hidden="true">&raquo;</span>
         </a>
@@ -338,6 +338,7 @@ function createFormBox(formId, title, formData, size, submitFun, btnName, create
 function createFormHtml(formId, formArr, btnName = "确定") {
   let formHtml = `<form id="${formId}" class="form-horizontal">`;
   formArr.forEach((elem) => {
+    console.log(elem);
     formHtml += `
       <div class="form-group">
         <label for="${elem.name}Input" class="col-sm-2 control-label">${elem.required ? '<span class="red">*</span>' : ""}${elem.label}</label>
@@ -356,7 +357,7 @@ function createFormHtml(formId, formArr, btnName = "确定") {
       elem.options.forEach((option) => {
         formHtml += `
           <label class="${elem.type}-inline">
-            <input type="${elem.type}" name="${elem.name}" value="${option.value}" ${option.checked ? "checked" : ""} ${elem.deisabled ? "disabled" : ""}> ${option.name}
+            <input type="${elem.type}" name="${elem.name}" value="${option.value}" ${option.checked ? "checked" : ""} ${elem.disabled ? "disabled" : ""}> ${option.name}
           </label>`
       })
     } else if (elem.type === "textarea") {
@@ -592,7 +593,7 @@ function menuDetailFormBox(menu, readonly = false) {
         name: "order",
         required: true,
         placeholder: "菜单显示顺序",
-        reg: "^[1-9]\d*$",
+        reg: "^$|^[1-9]\\d*$",
         regTitle: "请输入有效数字",
         value: menu.order,
         disabled: readonly
@@ -602,7 +603,7 @@ function menuDetailFormBox(menu, readonly = false) {
         type: "number",
         name: "level",
         required: true,
-        reg: "^[1-9]\d*$",
+        reg: "^$|^[1-9]\\d*$",
         regTitle: "请输入有效数字",
         placeholder: "菜单层级",
         value: menu.level,
@@ -612,8 +613,8 @@ function menuDetailFormBox(menu, readonly = false) {
         label: "父菜单id",
         type: "number",
         name: "parentId",
-        required: false,
-        reg: "^[1-9]\d*$",
+        required: true,
+        reg: "^$|^\\d*$",
         regTitle: "请输入有效数字",
         placeholder: "父菜单id",
         value: menu.parentId,
@@ -633,14 +634,16 @@ function menuDetailFormBox(menu, readonly = false) {
         type: "radio",
         name: "state",
         required: true,
+        disabled: readonly,
         options: [{
             name: "正常",
             value: "0",
-            checked: true
+            checked: menu.state === 0,
           },
           {
             name: "禁用",
             value: "1",
+            checked: menu.state === 1,
           },
         ],
         placeholder: "菜单状态",

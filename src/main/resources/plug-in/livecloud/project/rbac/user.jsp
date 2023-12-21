@@ -163,7 +163,7 @@
         options: [
           {
             name: "无",
-            value: "",
+            value: "0",
             checked: user.sex === 0,
           },
           {
@@ -200,12 +200,12 @@
       {
         label: "用户状态",
         type: "radio",
-        name: "sex",
+        name: "state",
         required: true,
         options: [
           {
             name: "正常",
-            value: "",
+            value: "0",
             checked: user.state === 0,
           },
           {
@@ -395,7 +395,7 @@
   }
 
   function menuDetail(menuId) {
-    $.get(ROUTE_MENU + "?action=query", "menuId=" + menuId, (res) => {
+    $.get(ROUTE_MENU + "?action=query", "id=" + menuId, (res) => {
       if (!res.success) {
         failMessageFloat(res.msg);
         return;

@@ -246,7 +246,7 @@ public class MenuMapperImpl extends GeneralMapper implements IMenuMapper {
         try {
             StringBuilder sql = new StringBuilder();
             sql.append("update CT_Rbac_Menu set FName = ?, FOrder = ?, FLevel = ?, FParentId = ?,");
-            sql.append("FState = ?, FDescription = ?, FUrl = ?, FUpdateTime = ?, ");
+            sql.append("FUrl = ?,FState = ?, FDescription = ?, FUpdateTime = ? ");
             sql.append("where ID = ?");
 
             ApexDao dao = new ApexDao();

@@ -26,8 +26,8 @@ public class MenuController extends AbstractController {
     /**
      * 查询菜单树
      *
+     * @param id
      * @param roleId
-     * @param menuId
      * @param userId
      * @param request
      * @param response
@@ -36,16 +36,16 @@ public class MenuController extends AbstractController {
     @RequestMapping(value = CommonConstants.ROUTE_URI_MENU,
             params = CommonConstants.PARAM_ACTION_QUERY, method = RequestMethod.GET)
     @ResponseBody
-    public Response query(Long roleId, Long menuId, Long userId,
+    public Response query(Long id, Long roleId, Long userId,
                           HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
 
         if ((roleId != null && roleId <= 0) ||
-                (menuId != null && menuId <= 0) ||
+                (id != null && id <= 0) ||
                 (userId != null && userId <= 0)) {
             return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_ERROR_DATA));
         }
-        List<Menu> menusTree = MenuService.getInstance().queryToTree(roleId, menuId, userId);
+        List<Menu> menusTree = MenuService.getInstance().queryToTree(id, roleId, userId);
         return Response.ofSuccess(menusTree);
     }
 

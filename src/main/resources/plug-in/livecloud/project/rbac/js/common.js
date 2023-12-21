@@ -106,7 +106,7 @@ function changeJsonToArr(properties, data) {
         return obj[prop] === 0 ? "男" : "女";
       }
       if (prop === "state") {
-        return obj[prop] === 0 ? "可用" : "禁用";
+        return obj[prop] === 0 ? "正常" : "禁用";
       }
       return obj[prop];
     })
