@@ -2,6 +2,7 @@ package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.impl;
 
 import com.apex.livebos.console.common.util.Util;
 import com.apex.util.ApexDao;
+import com.apex.util.ApexRowSet;
 import com.apexinfo.livecloud.server.core.GeneralMapper;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant.CommonConstants;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.util.SQLUtil;
@@ -20,135 +21,76 @@ import java.util.List;
  */
 public class RoleMenuMapperImpl extends GeneralMapper implements IRoleMenuMapper {
     /**
-     * 根据角色id新增对应的菜单
+     * 根据菜单id列表查询对应的角色id
      *
-     * @param roleId
-     * @param menuIds
+     * @param menuIds 菜单id列表
      * @return
      */
-    // TODO 事务待修改
     @Override
-    public int addMenuList(Long roleId, List<Long> menuIds) {
-        if (menuIds.size() <= 0) {
-            return 1;
-        }
-        int rows = 0;
-        try {
-            String sql = "insert into CT_Rbac_Role_Menu(ID, FRoleId, FMenuId) values(?, ?, ?) ";
-            ApexDao dao = new ApexDao();
-            dao.prepareStatement(sql);
-            for (Long menuId : menuIds) {
-                long nextID = getNextID(CommonConstants.TABLE_RBAC_ROLE_MENU);
-                dao.setLong(1, nextID);
-                dao.setLong(2, roleId);
-                dao.setLong(3, menuId);
-
-                rows += dao.executeUpdate(getDataSource());
-            }
-        } catch (SQLException e) {
-            rows = 0;
-            e.printStackTrace();
-            logger.error(e.getMessage(), e);
-            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-        }
-        return rows;
-    }
-
-    /**
-     * 根据角色id删除对应的菜单
-     *
-     * @param roleId
-     * @param menuIds
-     * @return
-     */
-    // TODO 事务待修改
-    @Override
-    public int deleteByMenuList(Long roleId, List<Long> menuIds) {
-        if (Util.isEmpty(menuIds)) {
-            return 1;
-        }
-        int rows = 0;
+    public List<Long> queryIdByMenuIds(List<Long> menuIds) throws SQLException {
+        List<Long> roleIds = null;
+        ApexRowSet rs = null;
         try {
             StringBuilder sql = new StringBuilder();
-            sql.append("delete from CT_Rbac_Role_Menu where FRoleId = ? and FMenuId in ");
+            sql.append("select FRoleID from CT_Rbac_Role_Menu where FMenuId in ");
             sql.append(SQLUtil.listToSQLList(menuIds));
-
-            ApexDao dao = new ApexDao();
-            dao.prepareStatement(sql.toString());
-            dao.setLong(1, roleId);
-            for (int i = 0; i < menuIds.size(); i++) {
-                dao.setLong(i + 2, menuIds.get(i));
-            }
-            rows = dao.executeUpdate(getDataSource());
-        } catch (SQLException e) {
-            e.printStackTrace();
-            logger.error(e.getMessage(), e);
-            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-        }
-        return rows;
-    }
-
-    /**
-     * 根据角色id删除对应的所有角色_菜单关联
-     *
-     * @param roleIds
-     * @return
-     */
-    // TODO 事务待修改
-    @Override
-    public int deleteByRoleId(List<Long> roleIds) {
-        if (Util.isEmpty(roleIds)) {
-            return 1;
-        }
-        int rows = 0;
-        try {
-            StringBuilder sql = new StringBuilder();
-            sql.append("delete from CT_Rbac_Role_Menu where FRoleId in ");
-            sql.append(SQLUtil.listToSQLList(roleIds));
-
-            ApexDao dao = new ApexDao();
-            dao.prepareStatement(sql.toString());
-            for (int i = 0; i < roleIds.size(); i++) {
-                dao.setLong(i + 1, roleIds.get(i));
-            }
-            rows = dao.executeUpdate(getDataSource());
-        } catch (SQLException e) {
-            e.printStackTrace();
-            logger.error(e.getMessage(), e);
-            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-        }
-        return rows;
-    }
-
-    /**
-     * 根据菜单id删除对应的所有角色_菜单关联
-     *
-     * @param menuIds
-     * @return
-     */
-    // TODO 事务待修改
-    @Override
-    public int deleteByMenuId(List<Long> menuIds) {
-        if (Util.isEmpty(menuIds)) {
-            return 1;
-        }
-        int rows = 0;
-        try {
-            StringBuilder sql = new StringBuilder();
-            sql.append("delete from CT_Rbac_Role_Menu where FMenuId in ");
-            sql.append(SQLUtil.listToSQLList(menuIds));
-
             ApexDao dao = new ApexDao();
             dao.prepareStatement(sql.toString());
             for (int i = 0; i < menuIds.size(); i++) {
                 dao.setLong(i + 1, menuIds.get(i));
             }
-            rows = dao.executeUpdate(getDataSource());
-        } catch (SQLException e) {
-            e.printStackTrace();
-            logger.error(e.getMessage(), e);
-            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            rs = dao.getRowSet(getDataSource());
+        } finally {
+            closeResource(rs);
         }
+        return roleIds;
+    }
+
+    /**
+     * 根据角色id新增对应的菜单列表关联
+     *
+     * @param roleId 角色id
+     * @param menuIds 要添加的菜单id列表
+     * @return
+     */
+    @Override
+    public int addMenuList(Long roleId, List<Long> menuIds) throws SQLException {
+        int rows = 0;
+        String sql = "insert into CT_Rbac_Role_Menu(ID, FRoleId, FMenuId) values(?, ?, ?) ";
+        ApexDao dao = new ApexDao();
+        dao.prepareStatement(sql);
+        for (Long menuId : menuIds) {
+            long nextID = getNextID(CommonConstants.TABLE_RBAC_ROLE_MENU);
+            dao.setLong(1, nextID);
+            dao.setLong(2, roleId);
+            dao.setLong(3, menuId);
+
+            rows += dao.executeUpdate(getDataSource());
+        }
+        return rows;
+    }
+
+    /**
+     * 根据角色id删除对应的菜单列表关联
+     *
+     * @param roleId 角色id
+     * @param menuIds 要删除的菜单id列表
+     * @return
+     */
+    @Override
+    public int deleteByMenuList(Long roleId, List<Long> menuIds) throws SQLException {
+        int rows = 0;
+        StringBuilder sql = new StringBuilder();
+        sql.append("delete from CT_Rbac_Role_Menu where FRoleId = ? and FMenuId in ");
+        sql.append(SQLUtil.listToSQLList(menuIds));
+
+        ApexDao dao = new ApexDao();
+        dao.prepareStatement(sql.toString());
+        dao.setLong(1, roleId);
+        for (int i = 0; i < menuIds.size(); i++) {
+            dao.setLong(i + 2, menuIds.get(i));
+        }
+        rows = dao.executeUpdate(getDataSource());
         return rows;
     }
 }

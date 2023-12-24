@@ -1,13 +1,16 @@
 package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.service;
 
 import com.apexinfo.livecloud.server.plugins.product.mobile.extend.DemoService;
+import com.apexinfo.livecloud.server.plugins.product.sql.query.util.MD5Tools;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant.CommonConstants;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.IUserMapper;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.impl.UserMapperImpl;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.PageDTO;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.PageBean;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.StateEnum;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.User;
 import org.apache.log4j.Logger;
 
+import java.sql.SQLException;
 import java.util.*;
 
 /**
@@ -36,107 +39,145 @@ public class UserService {
     }
 
     /**
-     * 分页查询/模糊查询所有用户 / 根据用户id查询用户 / 根据角色id查询用户
+     * 分页模糊查询所有用户
      *
-     * @param pageNo
-     * @param pageSize
-     * @param keyword
-     * @param id
-     * @param roleId
+     * @param pageBean 分页Bean
      * @return
      */
-    public PageDTO<User> query(Integer pageNo, Integer pageSize, String keyword, Long id, Long roleId) {
-        PageDTO<User> pageDTO = null;
-        if (id != null) {
-            // 根据用户id查询
-            pageDTO = userMapper.queryById(id);
-            pageDTO.setPageNo(1);
-            pageDTO.setPageSize(1);
-            return pageDTO;
+    public PageBean<User> queryAll(PageBean<User> pageBean) {
+        PageBean<User> result = null;
+        try {
+            result = userMapper.queryAll(pageBean);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
         }
-        if (roleId != null) {
-            // 根据角色id查询
-            pageDTO = userMapper.queryByRoleId(roleId);
-            return pageDTO;
-        }
-        // 查询全部
-        if (pageNo == null) {
-            pageNo = 1;
-        }
-        if (pageSize == null) {
-            pageSize = 20;
-        }
-        pageDTO = userMapper.query(pageNo, pageSize, keyword);
-        return pageDTO;
+        return result;
     }
 
     /**
-     * 根据用户编号或用户名查找用户
+     * 根据用户id查询用户
      *
-     * @param no
-     * @param name
+     * @param userId 用户id
      * @return
      */
-    public List<User> queryByNoOrName(String no, String name) {
-        return userMapper.queryByNoOrName(no, name);
+    public User queryByUserId(Long userId) {
+        User user = null;
+        try {
+            user = userMapper.queryByUserId(userId);
+        } catch (Exception e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+        }
+        return user;
+    }
+
+
+    /**
+     * 根据用户标识查找用户
+     *
+     * @param userCode 用户编码
+     * @return
+     */
+    public Long queryIdByUserCode(String userCode) {
+        Long userId = null;
+        try {
+            userId = userMapper.queryIdByUserCode(userCode);
+        } catch (Exception e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+        }
+        return userId;
+    }
+
+    /**
+     * 根据角色id查询用户id
+     *
+     * @param roleId 角色id
+     * @return
+     */
+    public List<Long> queryIdByRoleId(Long roleId) {
+        List<Long> userIds = null;
+        try {
+            userIds = userMapper.queryIdByRoleId(roleId);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+        }
+        return userIds;
     }
 
     /**
      * 新增用户
      *
-     * @param user
+     * @param user 用户
      * @return
      */
     public int add(User user) {
-        int rows;
-        user.setPassword(CommonConstants.DATA_USER_PASSWORD);
+        int rows = 0;
+        user.setState(StateEnum.正常.ordinal());
+        user.setPassword(new MD5Tools().stringToMD5(CommonConstants.DATA_USER_PASSWORD));
         user.setCreateTime(new Date());
         user.setUpdateTime(user.getCreateTime());
-        rows = userMapper.add(user);
+        try {
+            rows = userMapper.add(user);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+        }
         return rows;
     }
 
     /**
      * 修改用户
      *
-     * @param user
+     * @param user 用户
      * @return
      */
     public int update(User user) {
-        int rows;
+        int rows = 0;
         user.setUpdateTime(new Date());
-        rows = userMapper.update(user);
+        try {
+            rows = userMapper.update(user);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+        }
         return rows;
     }
 
-//    /**
-//     * 修改用户的角色
-//     *
-//     * @param relativeDTO
-//     * @return
-//     */
-//    // TODO 事务待修改
-//    public int updateUserRoles(RelativeDTO relativeDTO) {
-//        if (relativeDTO.getAddList().size() == 0 && relativeDTO.getDeleteList().size() == 0) {
-//            return 1;
-//        }
-//        int rows = 0;
-//        // 进行删除操作
-//        rows += UserRoleService.getInstance().deleteByRoleIdList(relativeDTO.getId(), relativeDTO.getDeleteList());
-//        // 进行新增操作
-//        rows += UserRoleService.getInstance().addRoleList(relativeDTO.getId(), relativeDTO.getAddList());
-//        return rows;
-//    }
+    /**
+     * 修改用户密码
+     *
+     * @param user 用户
+     * @return
+     */
+    public int updatePassword(User user) {
+        int rows = 0;
+        user.setUpdateTime(new Date());
+        try {
+            rows = userMapper.updatePassword(user);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+        }
+        return rows;
+    }
 
     /**
      * 删除用户
      *
-     * @param id
+     * @param userIds 用户id列表
      * @return
      */
-    // TODO 事务待修改
-    public int delete(List<Long> id) {
-        UserRoleService.getInstance().deleteByUserId(id);
-        return userMapper.delete(id);
+    public int delete(List<Long> userIds) {
+        int rows = 0;
+        try {
+            rows += userMapper.delete(userIds);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+        }
+        return rows;
     }
 }

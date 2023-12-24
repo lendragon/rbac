@@ -5,6 +5,7 @@ import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.IRoleM
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.impl.RoleMenuMapperImpl;
 import org.apache.log4j.Logger;
 
+import java.sql.SQLException;
 import java.util.List;
 
 /**
@@ -29,45 +30,43 @@ public class RoleMenuService {
     }
 
     /**
-     * 根据角色id新增对应的菜单
+     * 根据菜单id列表查询对应的角色id列表
      *
-     * @param roleId
-     * @param menuIds
+     * @param menuIds 菜单id列表
      * @return
      */
-    int addMenuList(Long roleId, List<Long> menuIds) {
+    public List<Long> queryIdByMenuIds(List<Long> menuIds) {
+        List<Long> roleIds = null;
+        try {
+            roleIds = roleMenuMapper.queryIdByMenuIds(menuIds);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+        }
+        return roleIds;
+    }
+
+    /**
+     * 根据角色id新增对应的菜单列表关联
+     *
+     * @param roleId 角色id
+     * @param menuIds 要添加的菜单id列表
+     * @return
+     */
+    public int addMenuList(Long roleId, List<Long> menuIds) throws SQLException {
         return roleMenuMapper.addMenuList(roleId, menuIds);
     }
 
     /**
-     * 根据角色id删除对应的菜单
+     * 根据角色id删除对应的菜单列表关联
      *
-     * @param roleId
-     * @param menuIds
+     * @param roleId 角色id
+     * @param menuIds 要添加的菜单id列表
      * @return
      */
-    int deleteByMenuList(Long roleId, List<Long> menuIds) {
+    public int deleteByMenuList(Long roleId, List<Long> menuIds) throws SQLException {
         return roleMenuMapper.deleteByMenuList(roleId, menuIds);
     }
 
-    /**
-     * 根据角色id删除对应的所有角色_菜单关联
-     *
-     * @param roleIds
-     * @return
-     */
-    int deleteByRoleId(List<Long> roleIds) {
-        return roleMenuMapper.deleteByRoleId(roleIds);
-    }
-
-    /**
-     * 根据菜单id删除对应的所有角色_菜单关联
-     *
-     * @param menuIds
-     * @return
-     */
-    int deleteByMenuId(List<Long> menuIds) {
-        return roleMenuMapper.deleteByMenuId(menuIds);
-    }
 }
 

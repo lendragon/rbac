@@ -1,12 +1,15 @@
 package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.controller;
 
 import com.apex.livebos.console.common.util.Util;
+import com.apex.util.F;
+import com.apexinfo.livecloud.server.common.exception.PageException;
 import com.apexinfo.livecloud.server.common.exporter.Response;
 import com.apexinfo.livecloud.server.core.Core;
 import com.apexinfo.livecloud.server.core.web.AbstractController;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant.CommonConstants;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.Menu;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.service.MenuService;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.service.RoleMenuService;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,33 +29,96 @@ public class MenuController extends AbstractController {
     /**
      * 查询菜单树
      *
-     * @param id
-     * @param roleId
-     * @param userId
      * @param request
      * @param response
      * @return
      */
     @RequestMapping(value = CommonConstants.ROUTE_URI_MENU,
-            params = CommonConstants.PARAM_ACTION_QUERY, method = RequestMethod.GET)
+            params = CommonConstants.PARAM_ACTION_QUERY_ALL, method = RequestMethod.GET)
     @ResponseBody
-    public Response query(Long id, Long roleId, Long userId,
-                          HttpServletRequest request, HttpServletResponse response) {
+    public Response queryAllToTree(HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
 
-        if ((roleId != null && roleId <= 0) ||
-                (id != null && id <= 0) ||
-                (userId != null && userId <= 0)) {
-            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_ERROR_DATA));
-        }
-        List<Menu> menusTree = MenuService.getInstance().queryToTree(id, roleId, userId);
+        List<Menu> menusTree = MenuService.getInstance().queryAllToTree();
         return Response.ofSuccess(menusTree);
+    }
+
+    /**
+     * 根据用户id查询菜单树
+     *
+     * @param request
+     * @param response
+     * @return
+     */
+    @RequestMapping(value = CommonConstants.ROUTE_URI_MENU,
+            params = CommonConstants.PARAM_ACTION_QUERY_BY_USER_ID, method = RequestMethod.GET)
+    @ResponseBody
+    public Response queryToTreeByUserId(HttpServletRequest request, HttpServletResponse response) {
+        setJsonResponse(request, response);
+
+        try {
+            String userId = verificationParameter(request, CommonConstants.PARAM_COMMON_USER_ID, true, false);
+            List<Menu> menuTree = MenuService.getInstance().queryToTreeByUserId(F.toLong(userId));
+            return Response.ofSuccess(menuTree);
+        } catch (PageException e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+            return Response.ofFail(e.getMessage());
+        }
+    }
+
+    /**
+     * 根据角色id查询菜单树
+     *
+     * @param request
+     * @param response
+     * @return
+     */
+    @RequestMapping(value = CommonConstants.ROUTE_URI_MENU,
+            params = CommonConstants.PARAM_ACTION_QUERY_BY_ROLE_ID, method = RequestMethod.GET)
+    @ResponseBody
+    public Response queryToTreeByRoleId(HttpServletRequest request, HttpServletResponse response) {
+        setJsonResponse(request, response);
+
+        try {
+            String roleId = verificationParameter(request, CommonConstants.PARAM_COMMON_ROLE_ID, true, false);
+            List<Menu> menuTree = MenuService.getInstance().queryToTreeByRoleId(F.toLong(roleId));
+            return Response.ofSuccess(menuTree);
+        } catch (PageException e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+            return Response.ofFail(e.getMessage());
+        }
+    }
+
+    /**
+     * 根据菜单id查询菜单
+     *
+     * @param request
+     * @param response
+     * @return
+     */
+    @RequestMapping(value = CommonConstants.ROUTE_URI_MENU,
+            params = CommonConstants.PARAM_ACTION_QUERY_BY_MENU_ID, method = RequestMethod.GET)
+    @ResponseBody
+    public Response queryByMenuId(HttpServletRequest request, HttpServletResponse response) {
+        setJsonResponse(request, response);
+
+        try {
+            String menuId = verificationParameter(request, CommonConstants.PARAM_COMMON_MENU_ID, true, false);
+            Menu menu = MenuService.getInstance().queryByMenuId(F.toLong(menuId));
+            return Response.ofSuccess(menu);
+        } catch (PageException e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+            return Response.ofFail(e.getMessage());
+        }
     }
 
     /**
      * 新增菜单
      *
-     * @param menu
+     * @param menu 菜单
      * @param request
      * @param response
      * @return
@@ -62,6 +128,7 @@ public class MenuController extends AbstractController {
     @ResponseBody
     public Response add(@RequestBody Menu menu, HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
+
         int rows = MenuService.getInstance().add(menu);
         if (rows == 1) {
             return Response.ofSuccess(Core.i18n().getValue(CommonConstants.I18N_COMMON_SUCCESS_ADD, null));
@@ -72,7 +139,7 @@ public class MenuController extends AbstractController {
     /**
      * 修改菜单
      *
-     * @param menu
+     * @param menu 菜单
      * @param request
      * @param response
      * @return
@@ -82,9 +149,7 @@ public class MenuController extends AbstractController {
     @ResponseBody
     public Response update(@RequestBody Menu menu, HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
-        if (Util.isEmpty(menu.getId()) || menu.getId() <= 0) {
-            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_ERROR_DATA));
-        }
+
         int rows = MenuService.getInstance().update(menu);
         if (rows == 1) {
             return Response.ofSuccess(Core.i18n().getValue(CommonConstants.I18N_COMMON_SUCCESS_UPDATE), null);
@@ -95,7 +160,7 @@ public class MenuController extends AbstractController {
     /**
      * 删除菜单
      *
-     * @param ids
+     * @param menuIds 菜单id列表
      * @param request
      * @param response
      * @return
@@ -103,12 +168,16 @@ public class MenuController extends AbstractController {
     @RequestMapping(value = CommonConstants.ROUTE_URI_MENU,
             params = CommonConstants.PARAM_ACTION_DELETE, method = RequestMethod.POST)
     @ResponseBody
-    public Response delete(@RequestParam List<Long> ids, HttpServletRequest request, HttpServletResponse response) {
+    public Response delete(@RequestBody List<Long> menuIds, HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
-        if (Util.isEmpty(ids)) {
-            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_ERROR_DATA));
+
+        // 如果菜单有角色关联, 则不能删除
+        List<Long> roleIds = RoleMenuService.getInstance().queryIdByMenuIds(menuIds);
+        if (Util.isNotEmpty(roleIds)) {
+            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_MENU_ERROR_MENU_REQUIRED));
         }
-        int rows = MenuService.getInstance().delete(ids);
+
+        int rows = MenuService.getInstance().delete(menuIds);
         if (rows > 0) {
             return Response.ofSuccess(Core.i18n().getValue(CommonConstants.I18N_COMMON_SUCCESS_DELETE), null);
         }

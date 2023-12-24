@@ -62,6 +62,14 @@
         "${pageContext.request.contextPath}/livecloud/project/roleMenu.pagex";
       const ROUTE_MENU =
         "${pageContext.request.contextPath}/livecloud/project/menu.pagex";
+      const PARAM_ACTION_QUERY_ALL = "action=queryAll";
+      const PARAM_ACTION_QUERY_BY_USER_ID = "action=queryByUserId";
+      const PARAM_ACTION_QUERY_BY_ROLE_ID = "action=queryByRoleId";
+      const PARAM_ACTION_QUERY_BY_MENU_ID = "action=queryByMenuId";
+      const PARAM_ACTION_UPDATE = "action=update";
+      const PARAM_ACTION_ADD = "action=add";
+      const PARAM_ACTION_DELETE = "action=delete";
+      
       $(() => {
         // 根据地址栏的参数page, 值为user、role、menu来展示不同的页面， 没有填写时自动加上user
         let page = getURLParam("page");

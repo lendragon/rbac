@@ -31,8 +31,8 @@ public class SQLUtil {
     /**
      * ?拼接like查询
      *
-     * @param sql
-     * @param params
+     * @param sql sql语句
+     * @param params 参数列表
      */
     public static void likeContact(StringBuilder sql, String... params) {
         // and (
@@ -55,10 +55,10 @@ public class SQLUtil {
     /**
      * 将keyword预编译到sql中
      *
-     * @param dao
-     * @param keyword
-     * @param offset
-     * @param length
+     * @param dao dao
+     * @param keyword 查询关键字
+     * @param offset 起始位置
+     * @param length 长度
      */
     public static void setLikeSQL(ApexDao dao, String keyword, int offset, int length) {
         StringBuilder likeSQL = new StringBuilder();
@@ -74,7 +74,7 @@ public class SQLUtil {
     /**
      * 将List对象变成(?,?,?)的格式
      *
-     * @param list
+     * @param list 列表
      * @return
      */
     public static String listToSQLList(List<?> list) {

@@ -1,7 +1,5 @@
 package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.List;
 
 /**
@@ -11,21 +9,18 @@ import java.util.List;
  * @Date 2023/12/18
  * @Version 1.0
  */
-public class RelativeDTO {
+public class RelativeBean {
     // 要修改的实体id
-    @JsonProperty(required = true)
     private Long roleId;
     // 要添加的id列表
-    @JsonProperty(required = true)
     private List<Long> addIds;
     // 要删除的id列表
-    @JsonProperty(required = true)
     private List<Long> deleteIds;
 
-    public RelativeDTO() {
+    public RelativeBean() {
     }
 
-    public RelativeDTO(Long roleId, List<Long> addIds, List<Long> deleteIds) {
+    public RelativeBean(Long roleId, List<Long> addIds, List<Long> deleteIds) {
         this.roleId = roleId;
         this.addIds = addIds;
         this.deleteIds = deleteIds;

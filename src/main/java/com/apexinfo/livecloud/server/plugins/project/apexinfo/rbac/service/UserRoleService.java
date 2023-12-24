@@ -5,6 +5,7 @@ import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.IUserR
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.impl.UserRoleMapperImpl;
 import org.apache.log4j.Logger;
 
+import java.sql.SQLException;
 import java.util.List;
 
 /**
@@ -31,76 +32,41 @@ public class UserRoleService {
     }
 
     /**
-     * 根据角色id列表查询是否有用户关联
+     * 根据角色id列表查询关联的用户id列表
      *
-     * @param roleIds
+     * @param roleIds 角色id列表
      * @return
      */
     public List<Long> queryByRoleIds(List<Long> roleIds) {
-        return userRoleMapper.queryUserIdByRoleIds(roleIds);
+        List<Long> userIds = null;
+        try {
+            userIds = userRoleMapper.queryUserIdByRoleIds(roleIds);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+        }
+        return userIds;
     }
 
     /**
      * 根据用户id新增对应的角色列表
      *
-     * @param roleId
-     * @param userIds
+     * @param roleId 角色id
+     * @param userIds 用户id列表
      * @return
      */
-    public int addUserList(Long roleId, List<Long> userIds) {
+    public int addUserList(Long roleId, List<Long> userIds) throws Exception {
         return userRoleMapper.addUserList(roleId, userIds);
-    }
-
-    /**
-     * 根据角色id新增对应的用户列表
-     *
-     * @param userId
-     * @param roleIds
-     * @return
-     */
-    public int addRoleList(Long userId, List<Long> roleIds) {
-        return userRoleMapper.addRoleList(userId, roleIds);
-    }
-
-    /**
-     * 根据用户id删除对应的角色列表
-     *
-     * @param userId
-     * @param deleteId
-     * @return
-     */
-    public int deleteByRoleIdList(Long userId, List<Long> deleteId) {
-        return userRoleMapper.deleteByRoleIdList(userId, deleteId);
     }
 
     /**
      * 根据角色id删除对应的用户列表
      *
-     * @param userId
-     * @param deleteId
+     * @param roleId 用户id
+     * @param deleteId 角色id列表
      * @return
      */
-    public int deleteByUserIdList(Long userId, List<Long> deleteId) {
-        return userRoleMapper.deleteByUserIdList(userId, deleteId);
-    }
-
-    /**
-     * 根据用户id除对应的所有用户_角色关联
-     *
-     * @param userId
-     * @return
-     */
-    public int deleteByUserId(List<Long> userId) {
-        return userRoleMapper.deleteByUserId(userId);
-    }
-
-    /**
-     * 根据角色id删除对应的所有用户_角色关联
-     *
-     * @param roleId
-     * @return
-     */
-    public int deleteByRoleId(List<Long> roleId) {
-        return userRoleMapper.deleteByRoleId(roleId);
+    public int deleteByUserIdList(Long roleId, List<Long> deleteId) throws SQLException {
+        return userRoleMapper.deleteByUserIdList(roleId, deleteId);
     }
 }

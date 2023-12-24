@@ -11,18 +11,29 @@ public class CommonConstants {
     /**
      * 请求接口的动作参数
      */
-    public static final String PARAM_ACTION_QUERY = "action=query";
+    public static final String PARAM_ACTION_QUERY_ALL = "action=queryAll";
+    public static final String PARAM_ACTION_QUERY_BY_USER_ID = "action=queryByUserId";
+    public static final String PARAM_ACTION_QUERY_BY_ROLE_ID = "action=queryByRoleId";
+    public static final String PARAM_ACTION_QUERY_BY_MENU_ID = "action=queryByMenuId";
     public static final String PARAM_ACTION_ADD = "action=add";
     public static final String PARAM_ACTION_UPDATE = "action=update";
+    public static final String PARAM_ACTION_UPDATE_PASSWORD = "action=updatePassword";
     public static final String PARAM_ACTION_DELETE = "action=delete";
+
+    /**
+     * 接口参数名
+     */
+    public static final String PARAM_COMMON_USER_ID = "userId";
+    public static final String PARAM_COMMON_ROLE_ID = "roleId";
+    public static final String PARAM_COMMON_MENU_ID = "menuId";
+
     /**
      * 响应信息的国际化key
      */
-    public static final String I18N_USER_ERROR_REPEAT_NO = "apexinfo.rbac.user.response.error.repeat.no";
-
-    public static final String I18N_USER_ERROR_REPEAT_NAME = "apexinfo.rbac.user.response.error.repeat.name";
-    public static final String I18N_ROLE_ERROR_REQUIRED = "apexinfo.rbac.role.response.error.required";
-    public static final String I18N_COMMON_ERROR_DATA = "apexinfo.rbac.common.response.error.data";
+    public static final String I18N_USER_ERROR_REPEAT_CODE = "apexinfo.rbac.user.response.error.repeat.code";
+    public static final String I18N_ROLE_ERROR_REPEAT_CODE = "apexinfo.rbac.role.response.error.repeat.code";
+    public static final String I18N_ROLE_ERROR_ROLE_REQUIRED = "apexinfo.rbac.role.response.error.required.role";
+    public static final String I18N_MENU_ERROR_MENU_REQUIRED = "apexinfo.rbac.menu.response.error.required.menu";
     public static final String I18N_COMMON_SUCCESS_ADD = "apexinfo.rbac.common.response.success.add";
     public static final String I18N_COMMON_SUCCESS_UPDATE = "apexinfo.rbac.common.response.success.update";
     public static final String I18N_COMMON_SUCCESS_DELETE = "apexinfo.rbac.common.response.success.delete";

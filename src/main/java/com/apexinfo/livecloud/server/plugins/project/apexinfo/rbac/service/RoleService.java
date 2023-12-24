@@ -1,13 +1,18 @@
 package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.service;
 
+import com.apex.form.transaction.TransactionManagerFactory;
 import com.apexinfo.livecloud.server.plugins.product.mobile.extend.DemoService;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.IRoleMapper;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.impl.RoleMapperImpl;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.RelativeDTO;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.RelativeBean;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.Role;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.PageDTO;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.PageBean;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.StateEnum;
 import org.apache.log4j.Logger;
 
+import javax.transaction.SystemException;
+import javax.transaction.TransactionManager;
+import java.sql.SQLException;
 import java.util.*;
 
 /**
@@ -36,112 +41,185 @@ public class RoleService {
     }
 
     /**
-     * 分页查询/模糊查询所有角色 / 根据用户id查询角色
+     * 分页模糊查询所有角色
      *
-     * @param pageNo
-     * @param pageSize
-     * @param keyword
-     * @param roleId
-     * @param userId
+     * @param pageBean 分页Bean
      * @return
      */
-    public PageDTO<Role> query(Integer pageNo, Integer pageSize, String keyword, Long userId, Long roleId) {
-        PageDTO<Role> pageDTO = null;
-        if (roleId != null) {
-            // 根据角色id查询角色
-            pageDTO = roleMapper.queryById(roleId);
-            pageDTO.setPageNo(pageNo);
-            pageDTO.setPageSize(pageSize);
-            return pageDTO;
+    public PageBean<Role> queryAll(PageBean<Role> pageBean) {
+        try {
+            // 查询所有角色
+            pageBean = roleMapper.queryAll(pageBean);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
         }
-        if (userId != null) {
-            // 根据用户id查询角色
-            pageDTO = roleMapper.queryByUserId(userId);
-            pageDTO.setPageNo(pageNo);
-            pageDTO.setPageNo(pageSize);
-            return pageDTO;
+        return pageBean;
+    }
+
+    /**
+     * 根据用户id查询角色
+     *
+     * @param userId 用户id
+     * @return
+     */
+    // TODO 查询角色还是只需要查询角色id, 如果用户不需要直接查看角色的话, 可以删除
+    public List<Role> queryByUserId(Long userId) {
+        List<Role> roles = null;
+        try {
+            roles = roleMapper.queryByUserId(userId);
+        } catch (Exception e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
         }
-        // 查询所有角色
-        if (pageNo == null) {
-            pageNo = 1;
+        return roles;
+    }
+
+    /**
+     * 根据角色id查询角色
+     *
+     * @param roleId 角色id
+     * @return
+     */
+    public Role queryByRoleId(Long roleId) {
+        Role role = null;
+        try {
+            role = roleMapper.queryByRoleId(roleId);
+        } catch (Exception e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
         }
-        if (pageSize == null) {
-            pageSize = 20;
+        return role;
+    }
+
+    /**
+     * 根据角色编号查询角色id
+     *
+     * @param roleCode 角色id
+     * @return
+     */
+    public Long queryIdByRoleCode(String roleCode) {
+        Long roleId = null;
+        try {
+            roleId = roleMapper.queryIdByRoleCode(roleCode);
+        } catch (Exception e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
         }
-        pageDTO = roleMapper.query(pageNo, pageSize, keyword);
-        return pageDTO;
+        return roleId;
     }
 
     /**
      * 新增角色
      *
-     * @param role
+     * @param role 角色
      * @return
      */
     public int add(Role role) {
-        int rows;
+        int rows = 0;
+        role.setState(StateEnum.正常.ordinal());
         role.setCreateTime(new Date());
         role.setUpdateTime(role.getCreateTime());
-        rows = roleMapper.add(role);
+        try {
+            rows = roleMapper.add(role);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+        }
         return rows;
     }
 
     /**
      * 修改角色
      *
-     * @param role
+     * @param role 角色
      * @return
      */
     public int update(Role role) {
-        int rows;
+        int rows = 0;
         role.setUpdateTime(new Date());
-        rows = roleMapper.update(role);
+        try {
+            rows = roleMapper.update(role);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+        }
         return rows;
     }
 
     /**
      * 给用户授权角色
      *
-     * @param relativeDTO
+     * @param relativeBean 关联Bean
      * @return
      */
-    // TODO 事务
-    public int updateUserRole(RelativeDTO relativeDTO) {
+    public int updateUserRole(RelativeBean relativeBean) {
         int rows = 0;
-        // 添加对应关联
-        rows += UserRoleService.getInstance().addUserList(relativeDTO.getRoleId(), relativeDTO.getAddIds());
-        // 删除对应关联
-        rows += UserRoleService.getInstance().deleteByUserIdList(relativeDTO.getRoleId(), relativeDTO.getDeleteIds());
+        TransactionManager tm = TransactionManagerFactory.INSTANCE.getTransactionManager();
+        try {
+            tm.begin();
+            // 添加对应关联
+            rows += UserRoleService.getInstance().addUserList(relativeBean.getRoleId(), relativeBean.getAddIds());
+            // 删除对应关联
+            rows += UserRoleService.getInstance().deleteByUserIdList(relativeBean.getRoleId(), relativeBean.getDeleteIds());
+            tm.commit();
+        } catch (Exception e) {
+            rows = 0;
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+            try {
+                tm.rollback();
+            } catch (SystemException ex) {
+                ex.printStackTrace();
+                logger.error(ex.getMessage(), ex);
+            }
+        }
         return rows;
     }
 
     /**
      * 修改角色的菜单
      *
-     * @param relativeDTO
+     * @param relativeBean 关联Bean
      * @return
      */
-    // TODO 事务待修改
-    public int updateRoleMenus(RelativeDTO relativeDTO) {
+    public int updateRoleMenus(RelativeBean relativeBean) {
         int rows = 0;
-        // 进行删除操作
-        rows += RoleMenuService.getInstance().deleteByMenuList(relativeDTO.getRoleId(), relativeDTO.getDeleteIds());
-        // 进行新增操作
-        rows += RoleMenuService.getInstance().addMenuList(relativeDTO.getRoleId(), relativeDTO.getAddIds());
+        TransactionManager tm = TransactionManagerFactory.INSTANCE.getTransactionManager();
+        try {
+            tm.begin();
+            // 进行删除操作
+            rows += RoleMenuService.getInstance().deleteByMenuList(relativeBean.getRoleId(), relativeBean.getDeleteIds());
+            // 进行新增操作
+            rows += RoleMenuService.getInstance().addMenuList(relativeBean.getRoleId(), relativeBean.getAddIds());
+        } catch (Exception e) {
+            rows = 0;
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+            try {
+                tm.rollback();
+            } catch (SystemException ex) {
+                ex.printStackTrace();
+                logger.error(ex.getMessage(), ex);
+            }
+        }
         return rows;
     }
 
     /**
      * 删除角色
      *
-     * @param id
+     * @param roleIds 角色id列表
      * @return
      */
-    // TODO 事务待修改
-    public int delete(List<Long> id) {
-
-        // 删除角色_菜单关联表
-        RoleMenuService.getInstance().deleteByRoleId(id);
-        return roleMapper.delete(id);
+    public int delete(List<Long> roleIds) {
+        int rows = 0;
+        try {
+            rows = roleMapper.delete(roleIds);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+        }
+        return rows;
     }
 }

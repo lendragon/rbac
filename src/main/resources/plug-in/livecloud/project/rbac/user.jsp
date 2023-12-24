@@ -22,8 +22,7 @@
   <thead>
     <tr>
       <th><input type="checkbox" id="select-all" /></th>
-      <th>ID</th>
-      <th>用户编号</th>
+      <th>用户编码</th>
       <th>用户名</th>
       <th>性别</th>
       <th>出生日期</th>
@@ -46,7 +45,7 @@
   $(() => {
     pageNo = isEmpty(getURLParam("pageNo")) ? 1 : pageNo;
     keyword = getURLParam("keyword");
-    queryUsers(pageNo, keyword);
+    queryUsers(pageNo, pageSize, keyword);
     // 监听搜索框提交事件
     searchFormEvent(queryUsers);
     $("#addUserBtn").click(addUserFormBox);
@@ -54,10 +53,13 @@
   });
 
   // 查询用户
-  function queryUsers(pageNo, keyword) {
-    let params = "action=query";
+  function queryUsers(pageNo = 0, pageSize = 20, keyword) {
+    let params = PARAM_ACTION_QUERY_ALL;
     if (!isEmpty(pageNo)) {
       params += "&pageNo=" + pageNo;
+    }
+    if (!isEmpty(pageSize)) {
+      params += "&pageSize=" + pageSize;
     }
     if (!isEmpty(keyword)) {
       params += "&keyword=" + keyword;
@@ -78,8 +80,8 @@
         let total = res.data.total;
         let pageSize = res.data.pageSize;
         let properties = [
-          "id",
-          "no",
+          "userId",
+          "userCode",
           "name",
           "sex",
           "birthDay",
@@ -104,36 +106,39 @@
   // 查看用户详情
   function userDetail(userId) {
     let userData;
-    $.get(ROUTE_USER + "?action=query", "id=" + userId, (res) => {
-      if (!res.success) {
-        failMessageFloat(res.msg);
-        return;
+    $.get(
+      ROUTE_USER + "?" + PARAM_ACTION_QUERY_BY_USER_ID,
+      "userId=" + userId,
+      (res) => {
+        if (!res.success) {
+          failMessageFloat(res.msg);
+          return;
+        }
+        user = res.data;
+        userDetailFormBox(user);
       }
-      user = res.data.records[0];
-      userDetailFormBox(user);
-    });
+    );
   }
 
   function userDetailFormBox(user) {
     // 用户数据格式
     let userFormData = [
       {
-        label: "ID",
-        type: "text",
-        name: "id",
-        required: true,
-        disabled: true,
-        value: user.id,
+        label: "用户id",
+        type: "hidden",
+        name: "userId",
+        value: user.userId,
       },
       {
-        label: "用户编号",
+        label: "用户编码",
         type: "text",
-        name: "no",
+        name: "userCode",
         required: true,
-        placeholder: "用户编号",
-        reg: "^[0-9]{3}$",
-        regTitle: "请输入3位数字",
-        value: user.no,
+        placeholder: "用户编码",
+        reg: "^[0-9A-Za-z_]{5,16}$",
+        regTitle: "请输入5-16位字母、数字或下划线",
+        disabled: true,
+        value: user.userCode,
       },
       {
         label: "用户名",
@@ -145,36 +150,31 @@
         regTitle: "请输入2-12位的字符",
         value: user.name,
       },
-      {
-        label: "密码",
-        type: "password",
-        name: "password",
-        required: true,
-        placeholder: "密码",
-        reg: "^[^\u4e00-\u9fa5]{4,16}$",
-        regTitle: "请输入4-16位的数字、字母或特殊字符",
-        value: user.password,
-      },
+      // {
+      //   label: "密码",
+      //   type: "password",
+      //   name: "password",
+      //   required: true,
+      //   placeholder: "密码",
+      //   reg: "^[^\u4e00-\u9fa5]{4,16}$",
+      //   regTitle: "请输入4-16位的数字、字母或特殊字符",
+      //   value: user.password,
+      // },
       {
         label: "性别",
         type: "radio",
         name: "sex",
-        required: false,
+        required: true,
         options: [
           {
-            name: "无",
+            name: "男",
             value: "0",
             checked: user.sex === 0,
           },
           {
-            name: "男",
+            name: "女",
             value: "1",
             checked: user.sex === 1,
-          },
-          {
-            name: "女",
-            value: "2",
-            checked: user.sex === 2,
           },
         ],
         placeholder: "性别",
@@ -242,7 +242,6 @@
       1,
       (data, closeFun) => {
         confirmBox("提示", "确定修改吗?", 0, true, true, () => {
-          // data.id = user.id;
           updateUser(data);
           closeFun();
         });
@@ -255,7 +254,7 @@
   function userQueryRole(userId) {
     // 获取用户对应的角色
     $.get(
-      ROUTE_ROLE + "?action=query",
+      ROUTE_ROLE + "?" + PARAM_ACTION_QUERY_BY_USER_ID,
       "userId=" + userId,
       (res) => {
         if (!res.success) {
@@ -265,7 +264,7 @@
         let userRoles = res.data.records;
         // 查询所有角色
         $.get(
-          ROUTE_ROLE + "?action=query",
+          ROUTE_ROLE + "?" + PARAM_ACTION_QUERY_ALL,
           (res) => {
             if (!res.success) {
               failMessageFloat(res.msg);
@@ -287,12 +286,12 @@
     roles.forEach((role) => {
       options.push({
         name: role.name,
-        value: role.id,
+        value: role.roldId,
         checked:
           $.inArray(
-            role.id,
+            role.roldId,
             $.map(userRoles, function (r) {
-              return r.id;
+              return r.roldId;
             })
           ) !== -1,
       });
@@ -385,24 +384,32 @@
 
   // 查看用户菜单
   function userMenuDetail(userId) {
-    $.get(ROUTE_MENU + "?action=query", "userId=" + userId, (res) => {
-      if (!res.success) {
-        failMessageFloat(res.msg);
-        return;
+    $.get(
+      ROUTE_MENU + "?" + PARAM_ACTION_QUERY_BY_USER_ID,
+      "userId=" + userId,
+      (res) => {
+        if (!res.success) {
+          failMessageFloat(res.msg);
+          return;
+        }
+        userMenuDetailBox(res.data);
       }
-      userMenuDetailBox(res.data);
-    });
+    );
   }
 
   function menuDetail(menuId) {
-    $.get(ROUTE_MENU + "?action=query", "id=" + menuId, (res) => {
-      if (!res.success) {
-        failMessageFloat(res.msg);
-        return;
+    $.get(
+      ROUTE_MENU + "?" + PARAM_ACTION_QUERY_BY_MENU_ID,
+      "menuId=" + menuId,
+      (res) => {
+        if (!res.success) {
+          failMessageFloat(res.msg);
+          return;
+        }
+        menu = res.data[0];
+        menuDetailFormBox(menu, true);
       }
-      menu = res.data[0];
-      menuDetailFormBox(menu, true);
-    });
+    );
   }
 
   // 查看用户相关菜单模态框
@@ -421,19 +428,8 @@
 
   // 修改用户
   function updateUser(data) {
-    let isPasswordChanged = $("#userDetail input[type='password']").data(
-      "isPasswordChanged"
-    );
-    console.log(isPasswordChanged);
-    if (isPasswordChanged) {
-      // 密码加密
-      data.password = CryptoJS.MD5(data.password).toString();
-    } else {
-      data.password = null;
-    }
-
     $.ajax({
-      url: ROUTE_USER + "?action=update",
+      url: ROUTE_USER + "?" + PARAM_ACTION_UPDATE,
       type: "POST",
       contentType: "application/json",
       data: JSON.stringify(data),
@@ -444,7 +440,7 @@
           return;
         }
         successMessageFloat(res.msg);
-        queryUsers(pageNo, keyword);
+        queryUsers(pageNo, pageSize, keyword);
       },
     });
   }
@@ -469,40 +465,16 @@
   }
 
   // 删除用户
-  function deleteUsers(usersId) {
-    let data = {};
-    if (typeof usersId === "number") {
-      data.ids = [];
-      data.ids.push(usersId);
+  function deleteUsers(userIds) {
+    let data = [];
+    if (typeof userIds === "number") {
+      data.push(userIds);
     } else {
-      data.ids = usersId;
-    }
-    let param = $.param(data).replaceAll("%5B%5D", "");
-    $.post(ROUTE_USER + "?action=delete", param, (res) => {
-      if (!res.success) {
-        failMessageFloat(res.msg);
-        return;
-      }
-      successMessageFloat(res.msg);
-      queryUsers(pageNo, keyword);
-    });
-  }
-
-  // 新增用户
-  function addUser(data) {
-    let isPasswordChanged = $("#addUser input[type='password']").data(
-      "isPasswordChanged"
-    );
-    console.log(isPasswordChanged);
-    if (isPasswordChanged) {
-      // 密码加密
-      data.password = CryptoJS.MD5(data.password).toString();
-    } else {
-      data.password = null;
+      data = roleIds;
     }
 
     $.ajax({
-      url: ROUTE_USER + "?action=add",
+      url: ROUTE_USER + "?" + PARAM_ACTION_DELETE,
       type: "POST",
       contentType: "application/json",
       data: JSON.stringify(data),
@@ -513,7 +485,26 @@
           return;
         }
         successMessageFloat(res.msg);
-        queryUsers(pageNo, keyword);
+        queryUsers(pageNo, pageSize, keyword);
+      },
+    });
+  }
+
+  // 新增用户
+  function addUser(data) {
+    $.ajax({
+      url: ROUTE_USER + "?" + PARAM_ACTION_ADD,
+      type: "POST",
+      contentType: "application/json",
+      data: JSON.stringify(data),
+      success: function (res) {
+        // 请求成功后的回调函数
+        if (!res.success) {
+          failMessageFloat(res.msg);
+          return;
+        }
+        successMessageFloat(res.msg);
+        queryUsers(pageNo, pageSize, keyword);
       },
     });
   }
@@ -522,13 +513,13 @@
   function addUserFormBox() {
     let userFormData = [
       {
-        label: "用户编号",
+        label: "用户编码",
         type: "text",
-        name: "no",
+        name: "userCode",
         required: true,
-        placeholder: "用户编号",
-        reg: "^[0-9]{3}$",
-        regTitle: "请输入3位数字",
+        placeholder: "用户编码",
+        reg: "^[0-9A-Za-z_]{5,16}$",
+        regTitle: "请输入5-16位字母、数字或下划线",
       },
       {
         label: "用户名",
@@ -543,20 +534,15 @@
         label: "性别",
         type: "radio",
         name: "sex",
-        required: false,
+        required: true,
         options: [
           {
-            name: "无",
-            value: "0",
-            checked: true,
-          },
-          {
             name: "男",
-            value: "1",
+            value: "0",
           },
           {
             name: "女",
-            value: "2",
+            value: "1",
           },
         ],
         placeholder: "性别",
@@ -576,24 +562,6 @@
         placeholder: "电话",
         reg: "^$|^[0-9]{7,15}$",
         regTitle: "请输入有效电话号码",
-      },
-      {
-        label: "用户状态",
-        type: "radio",
-        name: "state",
-        required: true,
-        options: [
-          {
-            name: "正常",
-            value: "0",
-            checked: true,
-          },
-          {
-            name: "禁用",
-            value: "1",
-          },
-        ],
-        placeholder: "用户状态",
       },
     ];
 

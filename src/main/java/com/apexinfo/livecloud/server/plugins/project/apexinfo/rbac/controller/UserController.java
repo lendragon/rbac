@@ -1,11 +1,12 @@
 package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.controller;
 
-import com.apex.livebos.console.common.util.Util;
+import com.apex.util.F;
+import com.apexinfo.livecloud.server.common.exception.PageException;
 import com.apexinfo.livecloud.server.common.exporter.Response;
 import com.apexinfo.livecloud.server.core.Core;
 import com.apexinfo.livecloud.server.core.web.AbstractController;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant.CommonConstants;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.PageDTO;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.PageBean;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.User;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.service.UserService;
 import org.springframework.stereotype.Controller;
@@ -14,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * @ClassName: UserController
@@ -25,38 +25,74 @@ import java.util.Objects;
  */
 @Controller
 public class UserController extends AbstractController {
+
     /**
-     * 查询用户
+     * 查询所有用户
      *
-     * @param pageNo
-     * @param pageSize
-     * @param keyword
-     * @param id
-     * @param roleId
+     * @param pageBean 分页Bean, 包含pageNo, pageSize, keyword
+     * @return
+     */
+    @RequestMapping(value = CommonConstants.ROUTE_URI_USER,
+            params = CommonConstants.PARAM_ACTION_QUERY_ALL, method = RequestMethod.GET)
+    @ResponseBody
+    public Response queryAll(PageBean<User> pageBean, HttpServletRequest request, HttpServletResponse response) {
+        setJsonResponse(request, response);
+
+        UserService.getInstance().queryAll(pageBean);
+
+        return Response.ofSuccess(pageBean);
+    }
+
+    /**
+     * 根据用户id查询用户
+     *
      * @param request
      * @param response
      * @return
      */
     @RequestMapping(value = CommonConstants.ROUTE_URI_USER,
-            params = CommonConstants.PARAM_ACTION_QUERY, method = RequestMethod.GET)
+            params = CommonConstants.PARAM_ACTION_QUERY_BY_USER_ID, method = RequestMethod.GET)
     @ResponseBody
-    public Response query(Integer pageNo, Integer pageSize, String keyword, Long id, Long roleId,
-                          HttpServletRequest request, HttpServletResponse response) {
+    public Response queryByUserId(HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
-        if ((pageNo != null && pageNo < 1) ||
-                (pageSize != null && pageSize < 0) ||
-                (id != null && id <= 0)) {
-            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_ERROR_DATA));
+        try {
+            String userId = verificationParameter(request, CommonConstants.PARAM_COMMON_USER_ID, true, false);
+            User user = UserService.getInstance().queryByUserId(F.toLong(userId));
+            return Response.ofSuccess(user);
+        } catch (PageException e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+            return Response.ofFail(e.getMessage());
         }
+    }
 
-        PageDTO<User> pageDTO = UserService.getInstance().query(pageNo, pageSize, keyword, id, roleId);
-        return Response.ofSuccess(pageDTO);
+    /**
+     * 根据角色id查询用户id
+     *
+     * @param request
+     * @param response
+     * @return
+     */
+    @RequestMapping(value = CommonConstants.ROUTE_URI_USER,
+            params = CommonConstants.PARAM_ACTION_QUERY_BY_ROLE_ID, method = RequestMethod.GET)
+    @ResponseBody
+    public Response queryIdByRoleId(HttpServletRequest request, HttpServletResponse response) {
+        setJsonResponse(request, response);
+        try {
+            String roleId = verificationParameter(request, CommonConstants.PARAM_COMMON_ROLE_ID, true, false);
+            List<Long> userIds = UserService.getInstance().queryIdByRoleId(F.toLong(roleId));
+            return Response.ofSuccess(userIds);
+        } catch (PageException e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+            return Response.ofFail(e.getMessage());
+        }
     }
 
     /**
      * 新增用户
      *
-     * @param user
+     * @param user 用户
      * @param request
      * @param response
      * @return
@@ -67,18 +103,12 @@ public class UserController extends AbstractController {
     public Response add(@RequestBody User user,
                         HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
-        // 查看是否已经存在相同编号或相同名称的用户
-        List<User> queryUsers = UserService.getInstance().queryByNoOrName(user.getNo(), user.getName());
-        if (queryUsers != null) {
-            for (User queryUser : queryUsers) {
-                if (Objects.equals(user.getNo(), queryUser.getNo())) {
-                    return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_USER_ERROR_REPEAT_NO));
-                }
-                if (Objects.equals(user.getName(), queryUser.getName())) {
-                    return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_USER_ERROR_REPEAT_NAME));
-                }
-            }
+        // 查看是否已经存在相同编号的用户
+        Long userId = UserService.getInstance().queryIdByUserCode(user.getUserCode());
+        if (userId != null) {
+            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_USER_ERROR_REPEAT_CODE));
         }
+
         int rows = UserService.getInstance().add(user);
         if (rows == 1) {
             return Response.ofSuccess(Core.i18n().getValue(CommonConstants.I18N_COMMON_SUCCESS_ADD), null);
@@ -89,7 +119,7 @@ public class UserController extends AbstractController {
     /**
      * 修改用户
      *
-     * @param user
+     * @param user 用户
      * @param request
      * @param response
      * @return
@@ -100,10 +130,28 @@ public class UserController extends AbstractController {
     public Response update(@RequestBody User user,
                            HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
-        if (Util.isEmpty(user.getId()) || user.getId() <= 0) {
-            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_ERROR_DATA));
-        }
         int rows = UserService.getInstance().update(user);
+        if (rows == 1) {
+            return Response.ofSuccess(Core.i18n().getValue(CommonConstants.I18N_COMMON_SUCCESS_UPDATE), null);
+        }
+        return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_FAIL_UPDATE));
+    }
+
+    /**
+     * 修改用户密码
+     *
+     * @param user 用户
+     * @param request
+     * @param response
+     * @return
+     */
+    @RequestMapping(value = CommonConstants.ROUTE_URI_USER,
+            params = CommonConstants.PARAM_ACTION_UPDATE_PASSWORD, method = RequestMethod.POST)
+    @ResponseBody
+    public Response updatePassword(@RequestBody User user,
+                           HttpServletRequest request, HttpServletResponse response) {
+        setJsonResponse(request, response);
+        int rows = UserService.getInstance().updatePassword(user);
         if (rows == 1) {
             return Response.ofSuccess(Core.i18n().getValue(CommonConstants.I18N_COMMON_SUCCESS_UPDATE), null);
         }
@@ -113,7 +161,7 @@ public class UserController extends AbstractController {
     /**
      * 删除用户
      *
-     * @param ids
+     * @param userIds 用户id列表
      * @param request
      * @param response
      * @return
@@ -121,12 +169,10 @@ public class UserController extends AbstractController {
     @RequestMapping(value = CommonConstants.ROUTE_URI_USER,
             params = CommonConstants.PARAM_ACTION_DELETE, method = RequestMethod.POST)
     @ResponseBody
-    public Response delete(@RequestParam List<Long> ids, HttpServletRequest request, HttpServletResponse response) {
+    public Response delete(@RequestParam List<Long> userIds,
+                           HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
-        if (Util.isEmpty(ids)) {
-            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_ERROR_DATA));
-        }
-        int rows = UserService.getInstance().delete(ids);
+        int rows = UserService.getInstance().delete(userIds);
         if (rows > 0) {
             return Response.ofSuccess(Core.i18n().getValue(CommonConstants.I18N_COMMON_SUCCESS_DELETE), null);
         }

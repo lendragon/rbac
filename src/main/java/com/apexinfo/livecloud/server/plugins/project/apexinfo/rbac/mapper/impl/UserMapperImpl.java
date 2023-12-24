@@ -2,13 +2,14 @@ package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.impl;
 
 import com.apex.util.ApexDao;
 import com.apex.util.ApexRowSet;
+import com.apex.util.Util;
+import com.apexinfo.livecloud.server.common.SQLTool;
 import com.apexinfo.livecloud.server.core.GeneralMapper;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant.CommonConstants;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.util.SQLUtil;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.IUserMapper;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.PageDTO;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.PageBean;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.User;
-import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -24,41 +25,41 @@ import java.util.List;
 public class UserMapperImpl extends GeneralMapper implements IUserMapper {
 
     /**
-     * 分页查询用户
+     * 分页模糊查询所有用户
      *
-     * @param pageNo
-     * @param pageSize
-     * @param keyword
+     * @param pageBean 分页查询参数, pageNo, pageSize, keyword
      * @return
      */
     @Override
-    public PageDTO<User> query(Integer pageNo, Integer pageSize, String keyword) {
-        PageDTO<User> pageDTO = new PageDTO<>();
+    public PageBean<User> queryAll(PageBean<User> pageBean) throws SQLException {
+        int pageNo = pageBean.getPageNo();
+        int pageSize = pageBean.getPageSize();
+        String keyword = pageBean.getKeyword();
+
         List<User> users = new ArrayList<>();
-        pageDTO.setRecords(users);
-        pageDTO.setPageNo(pageNo);
-        pageDTO.setPageSize(pageSize);
+        pageBean.setRecords(users);
+
         ApexRowSet rs = null;
         try {
             StringBuilder sql = new StringBuilder();
-            sql.append("select ID, FNo, FName, FSex, FBirthDay,");
-            sql.append(" FPhoneNum, FState, FCreateTime, FUpdateTime ");
-            sql.append("from CT_Rbac_User where 1 = 1 ");
+            sql.append("select ID, FUserCode, FName, FSex, FBirthDay,");
+            sql.append("FPhoneNum, FState, FCreateTime, FUpdateTime ");
+            sql.append("from CT_Rbac_User where FState != 2 ");
             // 模糊查询拼接SQL
-            if (keyword != null && !keyword.isEmpty()) {
-                SQLUtil.likeContact(sql, "FNo", "FName", "FSex", "FBirthDay", "FState", "FPhoneNum");
+            if (!Util.isEmpty(keyword)) {
+                SQLUtil.likeContact(sql, "FUserCode", "FName", "FBirthDay", "FPhoneNum");
             }
             ApexDao dao = new ApexDao();
             dao.prepareStatement(sql.toString());
-            if (keyword != null && !keyword.isEmpty()) {
-                SQLUtil.setLikeSQL(dao, keyword, 1, 6);
+            if (!Util.isEmpty(keyword)) {
+                SQLUtil.setLikeSQL(dao, keyword, 1, 4);
             }
             rs = dao.getRowSet(getDataSource(), pageNo, pageSize, null);
-            pageDTO.setTotal(rs.getCount());
+            pageBean.setTotal(rs.getCount());
             while (rs.next()) {
                 User user = new User();
                 user.setId(rs.getLong("ID"));
-                user.setNo(rs.getString("FNo"));
+                user.setUserCode(rs.getString("FUserCode"));
                 user.setName(rs.getString("FName"));
                 user.setSex(rs.getInt("FSex"));
                 user.setBirthDay(rs.getDate("FBirthDay"));
@@ -68,246 +69,168 @@ public class UserMapperImpl extends GeneralMapper implements IUserMapper {
                 user.setUpdateTime(rs.getDate("FUpdateTime"));
                 users.add(user);
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            logger.error(e.getMessage(), e);
-        } finally {
+        }  finally {
             closeResource(rs);
         }
-        return pageDTO;
+        return pageBean;
     }
 
     /**
-     * 根据id查询用户
+     * 根据用户id查询用户
      *
-     * @param id
+     * @param userId 用户id
      * @return
      */
     @Override
-    public PageDTO<User> queryById(Long id) {
-        PageDTO<User> pageDTO = new PageDTO<>();
-        List<User> users = new ArrayList<>();
-        pageDTO.setRecords(users);
-        ApexRowSet rs = null;
-        try {
-            StringBuilder sql = new StringBuilder();
-            sql.append("select ID, FNo, FName, FPassword, FSex, FBirthDay,");
-            sql.append("FPhoneNum, FState, FCreateTime, FUpdateTime ");
-            sql.append("from CT_Rbac_User where ID = ? ");
+    public User queryByUserId(Long userId) throws Exception {
+        User user = null;
+        StringBuilder sql = new StringBuilder();
+        sql.append("select ID, FUserCode, FName, FSex, FBirthDay, FPhoneNum, FState,");
+        sql.append("FCreateTime, FUpdateTime from CT_Rbac_User where FState != 2 and ID = ? ");
 
-            ApexDao dao = new ApexDao();
-            dao.prepareStatement(sql.toString());
-            dao.setLong(1, id);
-            rs = dao.getRowSet(getDataSource());
-            pageDTO.setTotal(rs.getCount());
-            while (rs.next()) {
-                User user = new User();
-                user.setId(rs.getLong("ID"));
-                user.setNo(rs.getString("FNo"));
-                user.setName(rs.getString("FName"));
-                user.setPassword(rs.getString("FPassword"));
-                user.setSex(rs.getInt("FSex"));
-                user.setBirthDay(rs.getDate("FBirthDay"));
-                user.setPhoneNum(rs.getString("FPhoneNum"));
-                user.setState(rs.getInt("FState"));
-                user.setCreateTime(rs.getDate("FCreateTime"));
-                user.setUpdateTime(rs.getDate("FUpdateTime"));
-                users.add(user);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            logger.error(e.getMessage(), e);
-        } finally {
-            closeResource(rs);
-        }
-        return pageDTO;
+        user = SQLTool.one(User.class, sql.toString(), userId);
+        return user;
     }
 
     /**
      * 根据角色id查询用户
-     * @param roleId
+     *
+     * @param roleId 角色id
      * @return
      */
     @Override
-    public PageDTO<User> queryByRoleId(Long roleId) {
-        PageDTO<User> pageDTO = new PageDTO<>();
-        List<User> roles = new ArrayList<>();
-        pageDTO.setRecords(roles);
+    public List<Long> queryIdByRoleId(Long roleId) throws SQLException {
+        List<Long> userIds = new ArrayList<>();
         ApexRowSet rs = null;
         try {
             StringBuilder sql = new StringBuilder();
-            sql.append("select ID, FNo, FName, FSex, FBirthDay, FPhoneNum, FState, FCreateTime, FUpdateTime ");
-            sql.append("from CT_Rbac_User where ID in ");
-            sql.append("(select FUserId from CT_Rbac_User_Role where FRoleId = ?)");
+            sql.append("select ID from CT_Rbac_User where ID in ");
+            sql.append("(select FUserId from CT_Rbac_User_Role where FState != 2 and FRoleId = ?)");
 
             ApexDao dao = new ApexDao();
             dao.prepareStatement(sql.toString());
             dao.setLong(1, roleId);
             rs = dao.getRowSet(getDataSource());
-            pageDTO.setTotal(rs.getCount());
             while (rs.next()) {
-                User user = new User();
-                user.setId(rs.getLong("ID"));
-                user.setNo(rs.getString("FNo"));
-                user.setName(rs.getString("FName"));
-                user.setSex(rs.getInt("FSex"));
-                user.setBirthDay(rs.getDate("FBirthDay"));
-                user.setPhoneNum(rs.getString("FPhoneNum"));
-                user.setState(rs.getInt("FState"));
-                user.setCreateTime(rs.getDate("FCreateTime"));
-                user.setUpdateTime(rs.getDate("FUpdateTime"));
-                roles.add(user);
+                userIds.add(rs.getLong("ID"));
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            logger.error(e.getMessage(), e);
         } finally {
             closeResource(rs);
         }
-        return pageDTO;
+        return userIds;
     }
 
     /**
-     * 根据用户编号或用户名查找用户
+     * 根据用户编号查找用户id
      *
-     * @param no
-     * @param name
+     * @param userCode 用户编号
      * @return
      */
     @Override
-    public List<User> queryByNoOrName(String no, String name) {
-        List<User> users = new ArrayList<>();
-        ApexRowSet rs = null;
-        try {
-            String sql = "select FNo, FName from CT_Rbac_User where FNo = ? or FName = ?";
+    public Long queryIdByUserCode(String userCode) throws Exception {
+        Long userId = null;
+        String sql = "select ID from CT_Rbac_User where FState != 2 and FUserCode = ?";
+        userId = SQLTool.one(Long.class, sql, userCode);
 
-            ApexDao dao = new ApexDao();
-            dao.prepareStatement(sql);
-            dao.setString(1, no);
-            dao.setString(2, name);
-            rs = dao.getRowSet(getDataSource());
-            while (rs.next()) {
-                User user = new User();
-                user.setNo(rs.getString("FNo"));
-                user.setName(rs.getString("FName"));
-                users.add(user);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            logger.error(e.getMessage(), e);
-        } finally {
-            closeResource(rs);
-        }
-        return users;
+        return userId;
     }
 
     /**
      * 新增用户
      *
-     * @param user
+     * @param user 用户
      * @return
      */
     @Override
-    public int add(User user) {
+    public int add(User user) throws SQLException {
         int rows = 0;
-        try {
-            long nextId = getNextID(CommonConstants.TABLE_RBAC_USER);
-            user.setId(nextId);
-            StringBuilder sql = new StringBuilder();
-            sql.append("insert into CT_Rbac_User(ID, FNo, FName, FSex, FBirthDay, FPhoneNum, FState, FCreateTime, FUpdateTime ");
-            if (user.getPassword() == null) {
-                sql.append(") values(?,?,?,?,?,?,?,?,?)");
-            } else {
-                sql.append(", FPassword) values(?,?,?,?,?,?,?,?,?,?)");
-            }
-            ApexDao dao = new ApexDao();
-            dao.prepareStatement(sql.toString());
-            dao.setLong(1, user.getId());
-            dao.setString(2, user.getNo());
-            dao.setString(3, user.getName());
-            dao.setObject(4, user.getSex());
-            dao.setObject(5, user.getBirthDay());
-            dao.setString(6, user.getPhoneNum());
-            dao.setInt(7, user.getState());
-            dao.setObject(8, user.getCreateTime());
-            dao.setObject(9, user.getUpdateTime());
-            if (user.getPassword() != null) {
-                dao.setObject(10, user.getPassword());
-            }
-            rows = dao.executeUpdate(getDataSource());
-        } catch (SQLException e) {
-            e.printStackTrace();
-            logger.error(e.getMessage(), e);
-        }
+        long nextId = getNextID(CommonConstants.TABLE_RBAC_USER);
+        user.setId(nextId);
+        StringBuilder sql = new StringBuilder();
+        sql.append("insert into CT_Rbac_User(ID, FUserCode, FName, FPassword, FSex, FBirthDay, FPhoneNum, FState,");
+        sql.append("FCreateTime, FUpdateTime) values(?,?,?,?,?,?,?,?,?,?)");
+
+        ApexDao dao = new ApexDao();
+        dao.prepareStatement(sql.toString());
+        dao.setLong(1, user.getId());
+        dao.setString(2, user.getUserCode());
+        dao.setString(3, user.getName());
+        dao.setString(4, user.getPassword());
+        dao.setObject(5, user.getSex());
+        dao.setObject(6, user.getBirthDay());
+        dao.setString(7, user.getPhoneNum());
+        dao.setInt(8, user.getState());
+        dao.setObject(9, user.getCreateTime());
+        dao.setObject(10, user.getUpdateTime());
+
+        rows = dao.executeUpdate(getDataSource());
         return rows;
     }
 
     /**
      * 修改用户信息
      *
-     * @param user
+     * @param user 用户
      * @return
      */
     @Override
-    public int update(User user) {
+    public int update(User user) throws SQLException {
         int rows = 0;
-        try {
-            StringBuilder sql = new StringBuilder();
-            sql.append("update CT_Rbac_User set FNo = ?, FName = ?, FSex = ?,");
-            sql.append("FBirthDay = ?,FPhoneNum = ?, FState = ?, FUpdateTime = ? ");
-            if (user.getPassword() != null) {
-                sql.append(", FPassword = ? ");
-            }
-            sql.append(" where ID = ?");
+        StringBuilder sql = new StringBuilder();
+        sql.append("update CT_Rbac_User set FName = ?, FSex = ?, FBirthDay = ?,");
+        sql.append("FPhoneNum = ?, FState = ?, FUpdateTime = ? where ID = ?");
 
-            ApexDao dao = new ApexDao();
-            dao.prepareStatement(sql.toString());
-            dao.setString(1, user.getNo());
-            dao.setString(2, user.getName());
-            dao.setObject(3, user.getSex());
-            dao.setObject(4, user.getBirthDay());
-            dao.setString(5, user.getPhoneNum());
-            dao.setInt(6, user.getState());
-            dao.setObject(7, user.getUpdateTime());
-            if (user.getPassword() == null) {
-                dao.setLong(8, user.getId());
-            } else {
-                dao.setString(8, user.getPassword());
-                dao.setLong(9, user.getId());
-            }
-            rows = dao.executeUpdate(getDataSource());
-        } catch (SQLException e) {
-            e.printStackTrace();
-            logger.error(e.getMessage(), e);
-        }
+        ApexDao dao = new ApexDao();
+        dao.prepareStatement(sql.toString());
+        dao.setString(1, user.getName());
+        dao.setObject(2, user.getSex());
+        dao.setObject(3, user.getBirthDay());
+        dao.setString(4, user.getPhoneNum());
+        dao.setInt(5, user.getState());
+        dao.setObject(6, user.getUpdateTime());
+        dao.setLong(7, user.getId());
+
+        rows = dao.executeUpdate(getDataSource());
+
+        return rows;
+    }
+
+    @Override
+    public int updatePassword(User user) throws SQLException {
+        int rows = 0;
+        String sql = "update CT_Rbac_User set FPassword = ?, FUpdateTime = ? where ID = ?";
+
+        ApexDao dao = new ApexDao();
+        dao.prepareStatement(sql);
+        dao.setString(1, user.getPassword());
+        dao.setObject(2, user.getUpdateTime());
+        dao.setLong(3, user.getId());
+
+        rows = dao.executeUpdate(getDataSource());
+
         return rows;
     }
 
     /**
-     * 删除用户
+     * 删除用户, 即将用户的状态改成2, 删除
      *
-     * @param ids
+     * @param userIds 用户id列表
      * @return
      */
-    // TODO 事务待修改
     @Override
-    public int delete(List<Long> ids) {
+    public int delete(List<Long> userIds) throws SQLException {
         int rows = 0;
-        try {
-            StringBuilder sql = new StringBuilder();
-            sql.append("delete from CT_Rbac_User where ID in ");
-            sql.append(SQLUtil.listToSQLList(ids));
-            ApexDao dao = new ApexDao();
-            dao.prepareStatement(sql.toString());
-            for (int i = 0; i < ids.size(); i++) {
-                dao.setLong(i + 1, ids.get(i));
-            }
-            rows = dao.executeUpdate(getDataSource());
-        } catch (SQLException e) {
-            e.printStackTrace();
-            logger.error(e.getMessage(), e);
-            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+        StringBuilder sql = new StringBuilder();
+        sql.append("update CT_Rbac_User set FState = 2 where ID in ");
+        sql.append(SQLUtil.listToSQLList(userIds));
+
+        ApexDao dao = new ApexDao();
+        dao.prepareStatement(sql.toString());
+        for (int i = 0; i < userIds.size(); i++) {
+            dao.setLong(i + 1, userIds.get(i));
         }
+        rows = dao.executeUpdate(getDataSource());
+
         return rows;
     }
 }

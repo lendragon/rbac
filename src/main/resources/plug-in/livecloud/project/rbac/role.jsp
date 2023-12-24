@@ -22,7 +22,7 @@
   <thead>
     <tr>
       <th><input type="checkbox" id="select-all" /></th>
-      <th>ID</th>
+      <th>角色编码</th>
       <th>角色名</th>
       <th>角色状态</th>
       <th>角色描述</th>
@@ -43,7 +43,7 @@
   $(() => {
     pageNo = isEmpty(getURLParam("pageNo")) ? 1 : pageNo;
     keyword = getURLParam("keyword");
-    queryRoles(pageNo, keyword);
+    queryRoles(pageNo, pageSize, keyword);
     // 监听搜索框提交事件
     searchFormEvent(queryRoles);
     $("#addRoleBtn").click(addRoleFormBox);
@@ -51,10 +51,13 @@
   });
 
   // 查询角色
-  function queryRoles(pageNo, keyword) {
-    let params = "action=query";
+  function queryRoles(pageNo = 1, pageSize = 20, keyword) {
+    let params = PARAM_ACTION_QUERY_ALL;
     if (!isEmpty(pageNo)) {
       params += "&pageNo=" + pageNo;
+    }
+    if (!isEmpty(pageSize)) {
+      params += "&pageSize=" + pageSize;
     }
     if (!isEmpty(keyword)) {
       params += "&keyword=" + keyword;
@@ -75,7 +78,8 @@
         let total = res.data.total;
         let pageSize = res.data.pageSize;
         let properties = [
-          "id",
+          "roleId",
+          "roleCode",
           "name",
           "state",
           "description",
@@ -97,14 +101,18 @@
 
   // 查看角色详情
   function roleDetail(roleId) {
-    $.get(ROUTE_ROLE + "?action=query", "roleId=" + roleId, (res) => {
-      if (!res.success) {
-        failMessageFloat(res.msg);
-        return;
+    $.get(
+      ROUTE_ROLE + "?" + PARAM_ACTION_QUERY_BY_ROLE_ID,
+      "roleId=" + roleId,
+      (res) => {
+        if (!res.success) {
+          failMessageFloat(res.msg);
+          return;
+        }
+        role = res.data;
+        roleDetailFormBox(role);
       }
-      role = res.data.records[0];
-      roleDetailFormBox(role);
-    });
+    );
   }
 
   function roleDetailFormBox(role) {
@@ -113,12 +121,18 @@
       "角色详情",
       [
         {
-          label: "ID",
+          label: "角色id",
+          type: "hidden",
+          name: "roleId",
+          value: role.roleId,
+        },
+        {
+          label: "角色编码",
           type: "text",
-          name: "id",
+          name: "roleCode",
           required: true,
           disabled: true,
-          value: role.id,
+          value: role.roleCode,
         },
         {
           label: "角色名",
@@ -190,17 +204,18 @@
   function roleQueryUser(roleId) {
     // 获取角色对应的用户
     $.get(
-      ROUTE_USER + "?action=query",
+      ROUTE_USER + "?" + PARAM_ACTION_QUERY_BY_ROLE_ID,
       "roleId=" + roleId,
       (res) => {
         if (!res.success) {
           failMessageFloat(res.msg);
           return;
         }
-        let userRoles = res.data.records;
+        let userRoles = res.data;
         // 查询所有用户
         $.get(
-          ROUTE_USER + "?action=query",
+          ROUTE_USER + "?" + PARAM_ACTION_QUERY_ALL,
+          "pageNo=1&pageSize=20",
           (res) => {
             if (!res.success) {
               failMessageFloat(res.msg);
@@ -219,8 +234,7 @@
 
   function roleQueryUserTableBox(roleId, userRoles, users) {
     let tableHead = [
-      "ID",
-      "用户编号",
+      "用户编码",
       "用户名",
       "性别",
       "出生日期",
@@ -228,8 +242,8 @@
       "用户状态",
     ];
     let properties = [
-      "id",
-      "no",
+      "userId",
+      "userCode",
       "name",
       "sex",
       "birthDay",
@@ -252,12 +266,9 @@
         closeFun();
       },
       () => {
-        let userRolesId = $.map(userRoles, function (r) {
-          return r.id;
-        });
         // 角色有的用户多选框要自动勾选
         $(`#userTable input[type='checkbox']`).each(function () {
-          if ($.inArray(parseInt($(this).val()), userRolesId) !== -1) {
+          if ($.inArray(parseInt($(this).val()), userRoles) !== -1) {
             $(this).prop("checked", "true");
           }
         });
@@ -305,7 +316,7 @@
     data.addIds = addList;
     data.deleteIds = deleteList;
     $.ajax({
-      url: ROUTE_USER_ROLE + "?action=update",
+      url: ROUTE_USER_ROLE + "?" + PARAM_ACTION_UPDATE,
       type: "POST",
       contentType: "application/json",
       data: JSON.stringify(data),
@@ -323,23 +334,27 @@
   // 查询角色相关的菜单
   function roleMenuDetail(roleId) {
     // 查询角色菜单
-    $.get(ROUTE_MENU + "?action=query", "roleId=" + roleId, (res) => {
-      if (!res.success) {
-        failMessageFloat(res.msg);
-        return;
-      }
-      let roleMenus = res.data;
-      // 查询所有菜单
-      $.get(ROUTE_MENU + "?action=query", (res) => {
+    $.get(
+      ROUTE_MENU + "?" + PARAM_ACTION_QUERY_BY_ROLE_ID,
+      "roleId=" + roleId,
+      (res) => {
         if (!res.success) {
           failMessageFloat(res.msg);
           return;
         }
-        let menus = res.data;
-        // 创建角色菜单模态框
-        roleMenuDetailBox(roleId, roleMenus, menus);
-      });
-    });
+        let roleMenus = res.data;
+        // 查询所有菜单
+        $.get(ROUTE_MENU + "?" + PARAM_ACTION_QUERY_ALL, (res) => {
+          if (!res.success) {
+            failMessageFloat(res.msg);
+            return;
+          }
+          let menus = res.data;
+          // 创建角色菜单模态框
+          roleMenuDetailBox(roleId, roleMenus, menus);
+        });
+      }
+    );
   }
 
   // 角色相关菜单表单
@@ -401,8 +416,8 @@
           },
         });
 
-        // 
-        $('#roleMenu').treeview('expandAll');
+        //
+        $("#roleMenu").treeview("expandAll");
       }
     );
   }
@@ -470,13 +485,13 @@
   function getIdsToArray(data) {
     let ids = [];
     $.each(data, function (index, value) {
-      ids.push(value.id);
+      ids.push(value.menuId);
       if (value.children) {
         $.each(value.children, function (index, value) {
-          ids.push(value.id);
+          ids.push(value.menuId);
           if (value.children) {
             $.each(value.children, function (index, value) {
-              ids.push(value.id);
+              ids.push(value.menuId);
             });
           }
         });
@@ -489,7 +504,7 @@
     return menus.map((item) => ({
       text:
         `<input type="hidden" value="` +
-        item.id +
+        item.menuId +
         `" parentId="` +
         item.parentId +
         `">` +
@@ -501,7 +516,7 @@
           <button
             class="btn btn-info btn-sm btn-tree"
             onclick="event.stopPropagation(); menuDetail(` +
-        item.id +
+        item.menuId +
         `);"
           >
             <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
@@ -512,8 +527,7 @@
           ? convertToTreeDataOverride(originList, item.children)
           : null,
       state: {
-        checked: $.inArray(item.id, originList) !== -1,
-        // checked: true,
+        checked: $.inArray(item.menuId, originList) !== -1,
       },
     }));
   }
@@ -524,7 +538,7 @@
     data.addIds = addList;
     data.deleteIds = deleteList;
     $.ajax({
-      url: ROUTE_ROLE_MENU + "?action=update",
+      url: ROUTE_ROLE_MENU + "?" + PARAM_ACTION_UPDATE,
       type: "POST",
       contentType: "application/json",
       data: JSON.stringify(data),
@@ -540,20 +554,24 @@
   }
 
   function menuDetail(menuId) {
-    $.get(ROUTE_MENU + "?action=query", "id=" + menuId, (res) => {
-      if (!res.success) {
-        failMessageFloat(res.msg);
-        return;
+    $.get(
+      ROUTE_MENU + "?" + PARAM_ACTION_QUERY_BY_MENU_ID,
+      "menuId=" + menuId,
+      (res) => {
+        if (!res.success) {
+          failMessageFloat(res.msg);
+          return;
+        }
+        menu = res.data[0];
+        menuDetailFormBox(menu, true);
       }
-      menu = res.data[0];
-      menuDetailFormBox(menu, true);
-    });
+    );
   }
 
   // 修改角色
   function updateRole(data) {
     $.ajax({
-      url: ROUTE_ROLE + "?action=update",
+      url: ROUTE_ROLE + "?" + PARAM_ACTION_UPDATE,
       type: "POST",
       contentType: "application/json",
       data: JSON.stringify(data),
@@ -564,7 +582,7 @@
           return;
         }
         successMessageFloat(res.msg);
-        queryRoles(pageNo, keyword);
+        queryRoles(pageNo, pageSize, keyword);
       },
     });
   }
@@ -589,29 +607,34 @@
   }
 
   // 删除角色
-  function deleteRoles(rolesId) {
-    let data = {};
-    if (typeof rolesId === "number") {
-      data.ids = [];
-      data.ids.push(rolesId);
+  function deleteRoles(roleIds) {
+    let data = [];
+    if (typeof roleIds === "number") {
+      data.push(roleIds);
     } else {
-      data.ids = rolesId;
+      data = roleIds;
     }
-    let param = $.param(data).replaceAll("%5B%5D", "");
-    $.post(ROUTE_ROLE + "?action=delete", param, (res) => {
-      if (!res.success) {
-        failMessageFloat(res.msg);
-        return;
-      }
-      successMessageFloat(res.msg);
-      queryRoles(pageNo, keyword);
+
+    $.ajax({
+      url: ROUTE_ROLE + "?" + PARAM_ACTION_DELETE,
+      type: "POST",
+      contentType: "application/json",
+      data: JSON.stringify(data),
+      success: function (res) {
+        if (!res.success) {
+          failMessageFloat(res.msg);
+          return;
+        }
+        successMessageFloat(res.msg);
+        queryRoles(pageNo, pageSize, keyword);
+      },
     });
   }
 
   // 新增角色
   function addRole(data) {
     $.ajax({
-      url: ROUTE_ROLE + "?action=add",
+      url: ROUTE_ROLE + "?" + PARAM_ACTION_ADD,
       type: "POST",
       contentType: "application/json",
       data: JSON.stringify(data),
@@ -622,7 +645,7 @@
           return;
         }
         successMessageFloat(res.msg);
-        queryRoles(pageNo, keyword);
+        queryRoles(pageNo, pageSize, keyword);
       },
     });
   }
@@ -633,6 +656,15 @@
       "addRole",
       "新增角色",
       [
+        {
+          label: "角色编码",
+          type: "text",
+          name: "roleCode",
+          required: true,
+          placeholder: "角色编码",
+          reg: "^[0-9A-Za-z_]{5,16}$",
+          regTitle: "请输入5-16位字母、数字或下划线",
+        },
         {
           label: "角色名",
           type: "text",

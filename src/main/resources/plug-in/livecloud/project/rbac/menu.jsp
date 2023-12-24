@@ -19,17 +19,19 @@
 <script>
   $(() => {
     queryMenus();
-    $("#addMenuBtn").click(addMenuFormBox);
+    $("#addMenuBtn").click(() => {
+      addMenuFormBox(event, 0);
+    });
     // 监听搜索框提交事件
-    searchFormEvent((pageNo, roleId) => {
-      queryMenus("roleId=" + roleId);
+    searchFormEvent((pageNo, pageSize, roleId) => {
+      queryMenus("roleId=" + roleId, "role");
     });
   });
 
   // 查询菜单树
-  function queryMenus(params = "") {
+  function queryMenus(params = "", type = "") {
     $.get(
-      ROUTE_MENU + "?action=query",
+      ROUTE_MENU + "?" + (type === "" ? PARAM_ACTION_QUERY_ALL : PARAM_ACTION_QUERY_BY_ROLE_ID),
       params,
       (res) => {
         // 如果请求失败
@@ -48,20 +50,24 @@
 
   // 查看菜单详情
   function menuDetail(menuId) {
-    $.get(ROUTE_MENU + "?action=query", "id=" + menuId, (res) => {
-      if (!res.success) {
-        failMessageFloat(res.msg);
-        return;
+    $.get(
+      ROUTE_MENU + "?" + PARAM_ACTION_QUERY_BY_MENU_ID,
+      "menuId=" + menuId,
+      (res) => {
+        if (!res.success) {
+          failMessageFloat(res.msg);
+          return;
+        }
+        menu = res.data;
+        menuDetailFormBox(menu);
       }
-      menu = res.data[0];
-      menuDetailFormBox(menu);
-    });
+    );
   }
 
   // 修改菜单
   function updateMenu(data) {
     $.ajax({
-      url: ROUTE_MENU + "?action=update",
+      url: ROUTE_MENU + "?" + PARAM_ACTION_UPDATE,
       type: "POST",
       contentType: "application/json",
       data: JSON.stringify(data),
@@ -85,29 +91,15 @@
   }
 
   // 删除菜单
-  function deleteMenus(menusId) {
-    let data = {};
-    if (typeof menusId === "number") {
-      data.ids = [];
-      data.ids.push(menusId);
+  function deleteMenus(menuIds) {
+    let data = [];
+    if (typeof menuIds === "number") {
+      data.push(menuIds);
     } else {
-      data.ids = menusId;
+      data = menuIds;
     }
-    let param = $.param(data).replaceAll("%5B%5D", "");
-    $.post(ROUTE_MENU + "?action=delete", param, (res) => {
-      if (!res.success) {
-        failMessageFloat(res.msg);
-        return;
-      }
-      successMessageFloat(res.msg);
-      queryMenus();
-    });
-  }
-
-  // 新增菜单
-  function addMenu(data) {
     $.ajax({
-      url: ROUTE_MENU + "?action=add",
+      url: ROUTE_MENU + "?" + PARAM_ACTION_DELETE,
       type: "POST",
       contentType: "application/json",
       data: JSON.stringify(data),
@@ -123,12 +115,31 @@
     });
   }
 
-  function addChild(level, parentId) {
-    addMenuFormBox(null, level + 1, parentId);
+  // 新增菜单
+  function addMenu(data) {
+    $.ajax({
+      url: ROUTE_MENU + "?" + PARAM_ACTION_ADD,
+      type: "POST",
+      contentType: "application/json",
+      data: JSON.stringify(data),
+      success: function (res) {
+        // 请求成功后的回调函数
+        if (!res.success) {
+          failMessageFloat(res.msg);
+          return;
+        }
+        successMessageFloat(res.msg);
+        queryMenus();
+      },
+    });
+  }
+
+  function addChild(parentId) {
+    addMenuFormBox(null, parentId);
   }
 
   // 新增菜单的表单
-  function addMenuFormBox(event, level, parentId) {
+  function addMenuFormBox(event, parentId) {
     createFormBox(
       "addMenu",
       "新增菜单",
@@ -152,17 +163,6 @@
           regTitle: "请输入有效数字",
         },
         {
-          label: "菜单层级",
-          type: "number",
-          name: "level",
-          required: true,
-          reg: "^$|^[1-9]\\d*$",
-          regTitle: "请输入有效数字",
-          placeholder: "菜单层级",
-          value: level,
-          disabled: !isEmpty(level),
-        },
-        {
           label: "父菜单id",
           type: "number",
           name: "parentId",
@@ -171,32 +171,13 @@
           regTitle: "请输入有效数字",
           placeholder: "父菜单id",
           value: parentId,
-          disabled: !isEmpty(level),
+          disabled: !isEmpty(parentId),
         },
         {
           label: "菜单路径",
           type: "text",
           name: "url",
           required: false,
-          placeholder: "菜单路径",
-        },
-        {
-          label: "菜单状态",
-          type: "radio",
-          name: "state",
-          required: true,
-          options: [
-            {
-              name: "正常",
-              value: "0",
-              checked: true,
-            },
-            {
-              name: "禁用",
-              value: "1",
-            },
-          ],
-          placeholder: "菜单状态",
         },
         {
           label: "菜单描述",

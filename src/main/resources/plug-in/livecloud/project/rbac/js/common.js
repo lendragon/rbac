@@ -1,4 +1,5 @@
 let pageNo;
+let pageSize = 20;
 let keyword;
 
 function formatDate(timestamp, isDetail = true) {

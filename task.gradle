@@ -229,6 +229,8 @@ dependencies {
 
     // ThirdpartyLib
 //    compileOnly fileTree(dir: "${thirdPartyLibDir}/ThirdpartyLib", include: ["*.jar"])
+
+//    compile 'com.apexinfo.livecloud.license:Client:1.0.1'
 }
 
 test {

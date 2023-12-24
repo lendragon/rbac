@@ -1,21 +1,23 @@
 package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper;
 
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.PageDTO;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.PageBean;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.Role;
-import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.SQLException;
 import java.util.List;
 
 public interface IRoleMapper {
-    PageDTO<Role> query(Integer pageNo, Integer pageSize, String keyword);
+    PageBean<Role> queryAll(PageBean<Role> pageBean) throws SQLException;
 
-    PageDTO<Role> queryByUserId(Long userId);
+    Role queryByRoleId(Long id) throws Exception;
 
-    PageDTO<Role> queryById(Long id);
+    List<Role> queryByUserId(Long userId) throws SQLException;
 
-    int add(Role role);
+    Long queryIdByRoleCode(String roleCode) throws Exception;
 
-    int update(Role role);
+    int add(Role role) throws SQLException;
 
-    int delete(List<Long> id);
+    int update(Role role) throws SQLException;
+
+    int delete(List<Long> id) throws SQLException;
 }

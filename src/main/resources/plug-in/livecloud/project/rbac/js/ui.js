@@ -161,7 +161,7 @@ function searchFormEvent(queryFun) {
     if (typeof (queryFun) === "function") {
       keyword = $('#searchForm input[type="text"]').val();
       pageNo = 1;
-      queryFun(pageNo, keyword);
+      queryFun(pageNo, pageSize, keyword);
     }
   });
 }
@@ -217,7 +217,7 @@ function togglePageBtn(event, pageNoTmp, queryFun) {
   object.classList.add("active");
   pageNo = pageNoTmp;
   if (typeof (queryFun) === "function") {
-    queryFun(pageNoTmp, keyword);
+    queryFun(pageNoTmp, pageSize, keyword);
   }
 }
 
@@ -323,7 +323,7 @@ function createFormBox(formId, title, formData, size, submitFun, btnName, create
  *    label: 标签名字
  *    placeholder: 显示的提示文字
  *    name: 名字, 传递给后端的参数
- *    type: 类型(text, password, radio, checkbox, date, textarea)
+ *    type: 类型(text, password, radio, checkbox, date, textarea, hidden)
  *    disabled: boolean, 是否禁用
  *    value: 默认值
  *    options: 选项名和选项内容(当type为radio和checkbox时生效)
@@ -338,11 +338,12 @@ function createFormBox(formId, title, formData, size, submitFun, btnName, create
 function createFormHtml(formId, formArr, btnName = "确定") {
   let formHtml = `<form id="${formId}" class="form-horizontal">`;
   formArr.forEach((elem) => {
-    console.log(elem);
     formHtml += `
-      <div class="form-group">
-        <label for="${elem.name}Input" class="col-sm-2 control-label">${elem.required ? '<span class="red">*</span>' : ""}${elem.label}</label>
-      <div class="col-sm-9">`;
+      <div class="form-group">`
+    if (elem.type !== "hidden") {
+      formHtml += `<label for="${elem.name}Input" class="col-sm-2 control-label">${elem.required ? '<span class="red">*</span>' : ""}${elem.label}</label>`
+    }
+    formHtml += `<div class="col-sm-9">`;
     if (elem.type === "text" || elem.type === "password" || elem.type === "number") {
       formHtml += `
         <input id="${elem.name}Input" name="${elem.name}" type="${elem.type}" class="form-control"
@@ -351,8 +352,7 @@ function createFormHtml(formId, formArr, btnName = "确定") {
          ${isEmpty(elem.regTitle) ? "" : 'regTitle="' + elem.regTitle + '"'} 
          placeholder="${isEmpty(elem.placeholder) ? "" : elem.placeholder}" 
          ${elem.disabled ? "disabled" : ""} 
-         value="${isEmpty(elem.value) ? "" : elem.value}" 
-         ${elem.type === "password" ? "oninput='passwordChanged(event, this, " + elem.value + ")'" : ""}>`
+         value="${isEmpty(elem.value) ? "" : elem.value}" >`
     } else if (elem.type === "checkbox" || elem.type === "radio") {
       elem.options.forEach((option) => {
         formHtml += `
@@ -368,6 +368,10 @@ function createFormHtml(formId, formArr, btnName = "确定") {
          ${isEmpty(elem.regTitle) ? "" : 'regTitle="' + elem.regTitle + '"'} 
          placeholder="${isEmpty(elem.placeholder) ? "" : elem.placeholder}" 
          ${elem.disabled ? "disabled" : ""} >${isEmpty(elem.value) ? "" : elem.value}</textarea>`
+    } else if (elem.type === "hidden") {
+      formHtml += `
+      <input id="${elem.name}Input" name="${elem.name}" type="${elem.type}"
+       value="${isEmpty(elem.value) ? "" : elem.value}" >`
     } else { // date
       formHtml += `
         <input name="${elem.name}" type="text" class="form-control date-choose-input"  ${elem.required ? "required" : ""} 
@@ -435,7 +439,7 @@ function createTree(id, data, hasBtn = true, hasCheckBox = true, hasDetail = tru
 
 function convertToTreeData(data, hasBtn, hasCheckBox = true, detailBtn = true, addBtn = true, deleteBtn = true) {
   return data.map((item) => ({
-    text: (hasCheckBox ? `<input type="hidden" value="${item.id}" parentId="${item.parentId}">` : "") +
+    text: (hasCheckBox ? `<input type="hidden" value="${item.menuId}" parentId="${item.parentId}">` : "") +
       item.name + `<span class="label label-info margin-5">${item.children.length}</span>` +
       (hasBtn ? treeBtnHtml(item, detailBtn, addBtn, deleteBtn) : ""),
     nodes: item.children.length >= 1 ? convertToTreeData(item.children, hasBtn, hasCheckBox, detailBtn, addBtn, deleteBtn) : null,
@@ -449,7 +453,7 @@ function treeBtnHtml(elem, detailBtn = true, addBtn = true, deleteBtn = true) {
     treeBtn += `
       <button
         class="btn btn-info btn-sm btn-tree"
-        onclick="event.stopPropagation(); menuDetail(${elem.id});"
+        onclick="event.stopPropagation(); menuDetail(${elem.menuId});"
       >
         <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
       </button>`;
@@ -457,7 +461,7 @@ function treeBtnHtml(elem, detailBtn = true, addBtn = true, deleteBtn = true) {
   if (addBtn) {
     treeBtn += `<button
         class="btn btn-primary btn-sm btn-tree"
-        onclick="event.stopPropagation(); addChild(${elem.level}, ${elem.id});"
+        onclick="event.stopPropagation(); addChild(${elem.menuId});"
       >
         <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
       </button>`
@@ -465,7 +469,7 @@ function treeBtnHtml(elem, detailBtn = true, addBtn = true, deleteBtn = true) {
   if (deleteBtn) {
     treeBtn += `<button
       class="btn btn-danger btn-sm btn-tree"
-      onclick="event.stopPropagation(); deleteMenusBox(${elem.id});"
+      onclick="event.stopPropagation(); deleteMenusBox(${elem.menuId});"
     > 
       <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
       </button>`;
@@ -481,8 +485,7 @@ function createTable(selector, menuName, data, hasBtn = true, btnDataIndex = 0) 
   data.forEach((items) => {
     displayHtml +=
       `<tr>
-        <td><input type="checkbox" class="select-row" value="${items[0]}" /></td>
-        <th scope="row">${items[0]}</th>`;
+        <td><input type="checkbox" class="select-row" value="${items[0]}" /></td>`
     for (let i = 1; i < items.length; i++) {
       displayHtml += `<td>${items[i]}</td>`;
     }
@@ -570,11 +573,9 @@ function menuDetailFormBox(menu, readonly = false) {
     "菜单详情",
     [{
         label: "ID",
-        type: "text",
-        name: "id",
-        required: true,
-        disabled: true,
-        value: menu.id,
+        type: "hidden",
+        name: "menuId",
+        value: menu.menuId,
       },
       {
         label: "菜单名",
@@ -607,7 +608,7 @@ function menuDetailFormBox(menu, readonly = false) {
         regTitle: "请输入有效数字",
         placeholder: "菜单层级",
         value: menu.level,
-        disabled: readonly
+        disabled: true
       },
       {
         label: "父菜单id",
