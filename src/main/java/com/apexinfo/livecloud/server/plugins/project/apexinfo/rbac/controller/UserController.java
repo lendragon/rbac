@@ -1,7 +1,6 @@
 package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.controller;
 
 import com.apex.util.F;
-import com.apexinfo.livecloud.server.common.exception.PageException;
 import com.apexinfo.livecloud.server.common.exporter.Response;
 import com.apexinfo.livecloud.server.core.Core;
 import com.apexinfo.livecloud.server.core.web.AbstractController;
@@ -9,6 +8,7 @@ import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant.Comm
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.PageBean;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.User;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.service.UserService;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.util.ValidUtil;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,10 +27,9 @@ import java.util.List;
 public class UserController extends AbstractController {
 
     /**
-     * 查询所有用户
-     *
      * @param pageBean 分页Bean, 包含pageNo, pageSize, keyword
      * @return
+     * @description 查询所有用户
      */
     @RequestMapping(value = CommonConstants.ROUTE_URI_USER,
             params = CommonConstants.PARAM_ACTION_QUERY_ALL, method = RequestMethod.GET)
@@ -38,28 +37,33 @@ public class UserController extends AbstractController {
     public Response queryAll(PageBean<User> pageBean, HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
 
-        UserService.getInstance().queryAll(pageBean);
-
-        return Response.ofSuccess(pageBean);
+        try {
+            PageBean<User> result = UserService.getInstance().queryAll(pageBean);
+            return Response.ofSuccess(result);
+        } catch (Exception e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+            return Response.ofFail(e.getMessage());
+        }
     }
 
     /**
-     * 根据用户id查询用户
-     *
      * @param request
      * @param response
      * @return
+     * @description 根据用户id查询用户
      */
     @RequestMapping(value = CommonConstants.ROUTE_URI_USER,
             params = CommonConstants.PARAM_ACTION_QUERY_BY_USER_ID, method = RequestMethod.GET)
     @ResponseBody
     public Response queryByUserId(HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
+
         try {
-            String userId = verificationParameter(request, CommonConstants.PARAM_COMMON_USER_ID, true, false);
-            User user = UserService.getInstance().queryByUserId(F.toLong(userId));
+            String id = verificationParameter(request, CommonConstants.PARAM_COMMON_ID, true, false);
+            User user = UserService.getInstance().queryByUserId(F.toLong(id));
             return Response.ofSuccess(user);
-        } catch (PageException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             logger.error(e.getMessage(), e);
             return Response.ofFail(e.getMessage());
@@ -67,22 +71,22 @@ public class UserController extends AbstractController {
     }
 
     /**
-     * 根据角色id查询用户id
-     *
      * @param request
      * @param response
      * @return
+     * @description 根据角色id查询用户
      */
-    @RequestMapping(value = CommonConstants.ROUTE_URI_USER,
+    @RequestMapping(value = CommonConstants.ROUTE_URI_USER_ROLE,
             params = CommonConstants.PARAM_ACTION_QUERY_BY_ROLE_ID, method = RequestMethod.GET)
     @ResponseBody
-    public Response queryIdByRoleId(HttpServletRequest request, HttpServletResponse response) {
+    public Response queryByRoleId(HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
+
         try {
-            String roleId = verificationParameter(request, CommonConstants.PARAM_COMMON_ROLE_ID, true, false);
-            List<Long> userIds = UserService.getInstance().queryIdByRoleId(F.toLong(roleId));
-            return Response.ofSuccess(userIds);
-        } catch (PageException e) {
+            String id = verificationParameter(request, CommonConstants.PARAM_COMMON_ID, true, false);
+            List<User> users = UserService.getInstance().queryByRoleId(F.toLong(id));
+            return Response.ofSuccess(users);
+        } catch (Exception e) {
             e.printStackTrace();
             logger.error(e.getMessage(), e);
             return Response.ofFail(e.getMessage());
@@ -90,12 +94,11 @@ public class UserController extends AbstractController {
     }
 
     /**
-     * 新增用户
-     *
-     * @param user 用户
+     * @param user     用户
      * @param request
      * @param response
      * @return
+     * @description 新增用户
      */
     @RequestMapping(value = CommonConstants.ROUTE_URI_USER,
             params = CommonConstants.PARAM_ACTION_ADD, method = RequestMethod.POST)
@@ -103,26 +106,27 @@ public class UserController extends AbstractController {
     public Response add(@RequestBody User user,
                         HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
-        // 查看是否已经存在相同编号的用户
-        Long userId = UserService.getInstance().queryIdByUserCode(user.getUserCode());
-        if (userId != null) {
-            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_USER_ERROR_REPEAT_CODE));
-        }
 
-        int rows = UserService.getInstance().add(user);
-        if (rows == 1) {
-            return Response.ofSuccess(Core.i18n().getValue(CommonConstants.I18N_COMMON_SUCCESS_ADD), null);
+        try {
+            ValidUtil.valid(User.class, user, 1);
+
+            if (UserService.getInstance().add(user)) {
+                return Response.ofSuccess(Core.i18n().getValue(CommonConstants.I18N_COMMON_SUCCESS_ADD), null);
+            }
+            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_FAIL_ADD));
+        } catch (Exception e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+            return Response.ofFail(e.getMessage());
         }
-        return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_FAIL_ADD));
     }
 
     /**
-     * 修改用户
-     *
-     * @param user 用户
+     * @param user     用户
      * @param request
      * @param response
      * @return
+     * @description 修改用户
      */
     @RequestMapping(value = CommonConstants.ROUTE_URI_USER,
             params = CommonConstants.PARAM_ACTION_UPDATE, method = RequestMethod.POST)
@@ -130,52 +134,70 @@ public class UserController extends AbstractController {
     public Response update(@RequestBody User user,
                            HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
-        int rows = UserService.getInstance().update(user);
-        if (rows == 1) {
-            return Response.ofSuccess(Core.i18n().getValue(CommonConstants.I18N_COMMON_SUCCESS_UPDATE), null);
+
+        try {
+            ValidUtil.valid(User.class, user, 2);
+
+            if (UserService.getInstance().update(user)) {
+                return Response.ofSuccess(Core.i18n().getValue(CommonConstants.I18N_COMMON_SUCCESS_UPDATE), null);
+            }
+            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_FAIL_UPDATE));
+        } catch (Exception e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+            return Response.ofFail(e.getMessage());
         }
-        return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_FAIL_UPDATE));
     }
 
     /**
-     * 修改用户密码
-     *
-     * @param user 用户
+     * @param user     用户
      * @param request
      * @param response
      * @return
+     * @description 修改用户密码
      */
     @RequestMapping(value = CommonConstants.ROUTE_URI_USER,
             params = CommonConstants.PARAM_ACTION_UPDATE_PASSWORD, method = RequestMethod.POST)
     @ResponseBody
     public Response updatePassword(@RequestBody User user,
-                           HttpServletRequest request, HttpServletResponse response) {
+                                   HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
-        int rows = UserService.getInstance().updatePassword(user);
-        if (rows == 1) {
-            return Response.ofSuccess(Core.i18n().getValue(CommonConstants.I18N_COMMON_SUCCESS_UPDATE), null);
+
+        try {
+            if (UserService.getInstance().updatePassword(user)) {
+                return Response.ofSuccess(Core.i18n().getValue(CommonConstants.I18N_COMMON_SUCCESS_UPDATE), null);
+            }
+            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_FAIL_UPDATE));
+        } catch (Exception e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+            return Response.ofFail(e.getMessage());
         }
-        return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_FAIL_UPDATE));
     }
 
     /**
-     * 删除用户
-     *
-     * @param userIds 用户id列表
      * @param request
      * @param response
      * @return
+     * @description 删除用户
      */
     @RequestMapping(value = CommonConstants.ROUTE_URI_USER,
             params = CommonConstants.PARAM_ACTION_DELETE, method = RequestMethod.POST)
     @ResponseBody
-    public Response delete(@RequestParam List<Long> userIds,
-                           HttpServletRequest request, HttpServletResponse response) {
+    public Response delete(HttpServletRequest request, HttpServletResponse response) {
         setJsonResponse(request, response);
-        int rows = UserService.getInstance().delete(userIds);
-        if (rows > 0) {
-            return Response.ofSuccess(Core.i18n().getValue(CommonConstants.I18N_COMMON_SUCCESS_DELETE), null);
+
+        try {
+            String userId = verificationParameter(request, CommonConstants.PARAM_COMMON_ID, true, false);
+
+            if (UserService.getInstance().delete(F.toLong(userId))) {
+                return Response.ofSuccess(Core.i18n().getValue(CommonConstants.I18N_COMMON_SUCCESS_DELETE), null);
+            }
+            return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_FAIL_DELETE));
+        } catch (Exception e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+            return Response.ofFail(e.getMessage());
         }
-        return Response.ofFail(Core.i18n().getValue(CommonConstants.I18N_COMMON_FAIL_DELETE));
     }
 }

@@ -2,8 +2,8 @@ package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model;
 
 import com.apexinfo.livecloud.server.common.annotation.Column;
 import com.apexinfo.livecloud.server.common.annotation.Table;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.annotation.Valid;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Date;
@@ -17,48 +17,76 @@ import java.util.Date;
  */
 @Table("CT_Rbac_User")
 public class User {
-    // 用户id
+    /**
+     * 用户id
+     */
     @Column("ID")
-    @JsonProperty("userId")
+    @Valid(skipCode = 1)
     private Long id;
-    // 用户编码
-    @Column("FUserCode")
-    private String userCode;
-    // 用户名
+    /**
+     * 用户标识
+     */
+    @Column("FUserName")
+    @Valid(skipCode = 2)
+    private String userName;
+    /**
+     * 用户名
+     */
     @Column("FName")
+    @Valid
     private String name;
-    // 密码
+    /**
+     * 密码
+     */
     @Column("FPassword")
     private String password;
-    // 性别
+    /**
+     * 性别
+     */
     @Column("FSex")
+    @Valid
     private Integer sex;
-    // 生日
+    /**
+     * 生日
+     */
     @Column("FBirthDay")
     private Date birthDay;
-    // 手机号
+    /**
+     * 电话号码
+     */
     @Column("FPhoneNum")
     private String phoneNum;
-    // 角色状态
+    /**
+     * 角色状态
+     */
     @Column("FState")
+    @Valid(skipCode = 1)
     private Integer state;
-    // 创建时间
+    /**
+     * 创建时间
+     */
     @Column("FCreateTime")
     private Date createTime;
-    // 修改时间
+    /**
+     * 修改时间
+     */
     @Column("FUpdateTime")
     private Date updateTime;
-    // 旧密码
+    /**
+     * 旧密码
+     */
     private String oldPassword;
-    // 角色是否授权给了该用户
-    private Boolean checked;
+    /**
+     * 确认密码
+     */
+    private String checkedPassword;
 
     public User() {
     }
 
-    public User(Long id, String userCode, String name, String password, Integer sex, Date birthDay, String phoneNum, Integer state, Date createTime, Date updateTime, String oldPassword, Boolean checked) {
+    public User(Long id, String userName, String name, String password, Integer sex, Date birthDay, String phoneNum, Integer state, Date createTime, Date updateTime, String oldPassword, String checkedPassword) {
         this.id = id;
-        this.userCode = userCode;
+        this.userName = userName;
         this.name = name;
         this.password = password;
         this.sex = sex;
@@ -68,7 +96,7 @@ public class User {
         this.createTime = createTime;
         this.updateTime = updateTime;
         this.oldPassword = oldPassword;
-        this.checked = checked;
+        this.checkedPassword = checkedPassword;
     }
 
     public Integer getState() {
@@ -87,12 +115,12 @@ public class User {
         this.id = id;
     }
 
-    public String getUserCode() {
-        return userCode;
+    public String getUserName() {
+        return userName;
     }
 
-    public void setUserCode(String userCode) {
-        this.userCode = userCode;
+    public void setUserName(String userName) {
+        this.userName = userName;
     }
 
     public String getName() {
@@ -158,7 +186,6 @@ public class User {
     }
 
     @JsonIgnore
-    @JsonInclude(JsonInclude.Include.NON_NULL)
     public String getOldPassword() {
         return oldPassword;
     }
@@ -168,14 +195,13 @@ public class User {
         this.oldPassword = oldPassword;
     }
 
-    @JsonProperty("checked")
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    public Boolean getChecked() {
-        return checked;
+    @JsonIgnore
+    public String getCheckedPassword() {
+        return checkedPassword;
     }
 
-    @JsonIgnore
-    public void setChecked(Boolean checked) {
-        this.checked = checked;
+    @JsonProperty("checkedPassword")
+    public void setCheckedPassword(String checkedPassword) {
+        this.checkedPassword = checkedPassword;
     }
 }

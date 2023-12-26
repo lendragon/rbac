@@ -5,7 +5,6 @@ import com.apex.util.ApexRowSet;
 import com.apexinfo.livecloud.server.common.SQLTool;
 import com.apexinfo.livecloud.server.core.GeneralMapper;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant.CommonConstants;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.util.SQLUtil;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.IMenuMapper;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.Menu;
 
@@ -23,9 +22,8 @@ import java.util.List;
 public class MenuMapperImpl extends GeneralMapper implements IMenuMapper {
 
     /**
-     * 查询所有菜单
-     *
-     * @return
+     * @return List<Menu> 菜单列表
+     * @description 查询所有菜单
      */
     @Override
     public List<Menu> queryAll() throws SQLException {
@@ -33,14 +31,16 @@ public class MenuMapperImpl extends GeneralMapper implements IMenuMapper {
         ApexRowSet rs = null;
         try {
             StringBuilder sql = new StringBuilder();
-            sql.append("select ID, FName, FOrder, FLevel, FParentId, FUrl, FState, FDescription,");
-            sql.append("FCreateTime, FUpdateTime from CT_Rbac_Menu where FState != 2 ");
+            sql.append("select ID, FName, FOrder, FLevel, FParentId, FUrl, FState, FDescription ");
+            sql.append("from CT_Rbac_Menu where 1 = 1 ");
 
             ApexDao dao = new ApexDao();
             dao.prepareStatement(sql.toString());
             rs = dao.getRowSet(getDataSource());
+
+            Menu menu = null;
             while (rs.next()) {
-                Menu menu = new Menu();
+                menu = new Menu();
                 menu.setId(rs.getLong("ID"));
                 menu.setName(rs.getString("FName"));
                 menu.setOrder(rs.getInt("FOrder"));
@@ -49,8 +49,6 @@ public class MenuMapperImpl extends GeneralMapper implements IMenuMapper {
                 menu.setUrl(rs.getString("FUrl"));
                 menu.setState(rs.getInt("FState"));
                 menu.setDescription(rs.getString("FDescription"));
-                menu.setCreateTime(rs.getDate("FCreateTime"));
-                menu.setUpdateTime(rs.getDate("FUpdateTime"));
                 menus.add(menu);
             }
         } finally {
@@ -60,46 +58,45 @@ public class MenuMapperImpl extends GeneralMapper implements IMenuMapper {
     }
 
     /**
-     * 根据菜单id查询菜单
-     *
-     * @param menuId 菜单id
-     * @return
+     * @param id 菜单主键
+     * @return Menu 菜单
+     * @description 根据菜单主键查询菜单
      */
     @Override
-    public Menu queryByMenuId(Long menuId) throws Exception {
+    public Menu queryByMenuId(Long id) throws Exception {
         Menu menu = null;
         StringBuilder sql = new StringBuilder();
         sql.append("select ID, FName, FOrder, FLevel, FParentId, FUrl, ");
         sql.append("FState, FDescription, FCreateTime, FUpdateTime ");
-        sql.append("from CT_Rbac_Menu where FState != 2 and ID = ?");
-        menu = SQLTool.one(Menu.class, sql.toString(), menuId);
+        sql.append("from CT_Rbac_Menu where ID = ?");
+        menu = SQLTool.one(Menu.class, sql.toString(), id);
         return menu;
     }
 
     /**
-     * 根据角色id查询菜单
-     *
-     * @param roleId 角色id
-     * @return
+     * @param id 角色主键
+     * @return List<Menu> 菜单列表
+     * @description 根据角色主键查询菜单
      */
     @Override
-    public List<Menu> queryByRoleId(Long roleId) throws SQLException {
+    public List<Menu> queryByRoleId(Long id) throws SQLException {
         List<Menu> menus = new ArrayList<>();
         ApexRowSet rs = null;
         try {
             StringBuilder sql = new StringBuilder();
             sql.append("select ID, FName, FOrder, FParentId, FUrl, ");
-            sql.append("FState, FDescription, FCreateTime, FUpdateTime ");
-            sql.append("from CT_Rbac_Menu ");
+            sql.append("FState, FDescription from CT_Rbac_Menu ");
             sql.append("where ID in (select FMenuId from CT_Rbac_Role_Menu where FRoleId = ?)");
 
             // 准备sql, 开始查询
             ApexDao dao = new ApexDao();
             dao.prepareStatement(sql.toString());
-            dao.setLong(1, roleId);
+            dao.setLong(1, id);
             rs = dao.getRowSet(getDataSource());
+
+            Menu menu = null;
             while (rs.next()) {
-                Menu menu = new Menu();
+                menu = new Menu();
                 menu.setId(rs.getLong("ID"));
                 menu.setName(rs.getString("FName"));
                 menu.setOrder(rs.getInt("FOrder"));
@@ -107,8 +104,6 @@ public class MenuMapperImpl extends GeneralMapper implements IMenuMapper {
                 menu.setUrl(rs.getString("FUrl"));
                 menu.setState(rs.getInt("FState"));
                 menu.setDescription(rs.getString("FDescription"));
-                menu.setCreateTime(rs.getDate("FCreateTime"));
-                menu.setUpdateTime(rs.getDate("FUpdateTime"));
                 menus.add(menu);
             }
         } finally {
@@ -118,19 +113,18 @@ public class MenuMapperImpl extends GeneralMapper implements IMenuMapper {
     }
 
     /**
-     * 根据用户id查询菜单
-     *
-     * @param userId 用户id
-     * @return
+     * @param id 用户主键
+     * @return List<Menu> 菜单列表
+     * @description 根据用户主键查询菜单
      */
     @Override
-    public List<Menu> queryByUserId(Long userId) throws SQLException {
+    public List<Menu> queryByUserId(Long id) throws SQLException {
         List<Menu> menus = new ArrayList<>();
         ApexRowSet rs = null;
         try {
             StringBuilder sql = new StringBuilder();
             sql.append("select distinct M.ID, M.FName, M.FOrder, M.FParentId, M.FUrl, ");
-            sql.append("M.FState, M.FDescription, M.FCreateTime, M.FUpdateTime ");
+            sql.append("M.FState, M.FDescription ");
             sql.append("from CT_Rbac_Menu as M left join CT_Rbac_Role_Menu as RM ");
             sql.append("on M.ID = RM.FMenuId ");
             sql.append("left join CT_Rbac_User_Role as UR on RM.FRoleId = UR.FRoleId ");
@@ -139,10 +133,12 @@ public class MenuMapperImpl extends GeneralMapper implements IMenuMapper {
             // 准备sql, 开始查询
             ApexDao dao = new ApexDao();
             dao.prepareStatement(sql.toString());
-            dao.setLong(1, userId);
+            dao.setLong(1, id);
             rs = dao.getRowSet(getDataSource());
+
+            Menu menu = null;
             while (rs.next()) {
-                Menu menu = new Menu();
+                menu = new Menu();
                 menu.setId(rs.getLong("ID"));
                 menu.setName(rs.getString("FName"));
                 menu.setOrder(rs.getInt("FOrder"));
@@ -150,8 +146,6 @@ public class MenuMapperImpl extends GeneralMapper implements IMenuMapper {
                 menu.setUrl(rs.getString("FUrl"));
                 menu.setState(rs.getInt("FState"));
                 menu.setDescription(rs.getString("FDescription"));
-                menu.setCreateTime(rs.getDate("FCreateTime"));
-                menu.setUpdateTime(rs.getDate("FUpdateTime"));
                 menus.add(menu);
             }
         } finally {
@@ -161,10 +155,34 @@ public class MenuMapperImpl extends GeneralMapper implements IMenuMapper {
     }
 
     /**
-     * 新增菜单
-     *
+     * @param id 菜单主键列表
+     * @return List<Long> 子菜单主键列表
+     * @description 根据菜单主键列表查询子菜单主键列表
+     */
+    @Override
+    public List<Long> queryChildrenIdsByMenuId(Long id) throws SQLException {
+        List<Long> menuChildrenIds = new ArrayList<>();
+        ApexRowSet rs = null;
+        try {
+            String sql = "select ID from CT_Rbac_Menu where FParentId = ?";
+            ApexDao dao = new ApexDao();
+            dao.prepareStatement(sql);
+            dao.setLong(1, id);
+
+            rs = dao.getRowSet(getDataSource());
+            while (rs.next()) {
+                menuChildrenIds.add(rs.getLong("ID"));
+            }
+        } finally {
+            closeResource(rs);
+        }
+        return menuChildrenIds;
+    }
+
+    /**
      * @param menu 菜单
-     * @return
+     * @return int 影响的行数
+     * @description 新增菜单
      */
     @Override
     public int add(Menu menu) throws SQLException {
@@ -194,18 +212,16 @@ public class MenuMapperImpl extends GeneralMapper implements IMenuMapper {
     }
 
     /**
-     * 修改菜单信息
-     *
      * @param menu 菜单
-     * @return
+     * @return int 影响的行数
+     * @description 修改菜单信息
      */
     @Override
     public int update(Menu menu) throws SQLException {
         int rows = 0;
         StringBuilder sql = new StringBuilder();
         sql.append("update CT_Rbac_Menu set FName = ?, FOrder = ?, FLevel = ?, FParentId = ?,");
-        sql.append("FUrl = ?,FState = ?, FDescription = ?, FUpdateTime = ? ");
-        sql.append("where ID = ?");
+        sql.append("FUrl = ?,FState = ?, FDescription = ?, FUpdateTime = ? where ID = ?");
 
         ApexDao dao = new ApexDao();
         dao.prepareStatement(sql.toString());
@@ -224,25 +240,20 @@ public class MenuMapperImpl extends GeneralMapper implements IMenuMapper {
     }
 
     /**
-     * 删除菜单, 即将菜单的状态改为2, 删除
-     *
-     * @param menuIds 菜单id列表
-     * @return
+     * @param id 菜单主键
+     * @return int 影响的行数
+     * @description 删除菜单, 即将菜单的状态改为2, 删除
      */
     @Override
-    public int delete(List<Long> menuIds) throws SQLException {
+    public int delete(Long id) throws SQLException {
         int rows = 0;
-        StringBuilder sql = new StringBuilder();
-        sql.append("update CT_Rbac_Menu set FState = 2 where ID in ");
-        sql.append(SQLUtil.listToSQLList(menuIds));
+        String sql = "update CT_Rbac_Menu set FState = 2 where ID = ?";
 
         ApexDao dao = new ApexDao();
-        dao.prepareStatement(sql.toString());
-        for (int i = 0; i < menuIds.size(); i++) {
-            dao.setLong(i + 1, menuIds.get(i));
-        }
-        rows = dao.executeUpdate(getDataSource());
+        dao.prepareStatement(sql);
+        dao.setLong(1, id);
 
+        rows = dao.executeUpdate(getDataSource());
         return rows;
     }
 }

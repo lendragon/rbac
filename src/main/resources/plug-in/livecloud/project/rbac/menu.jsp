@@ -18,20 +18,20 @@
 
 <script>
   $(() => {
-    queryMenus();
+    queryMenus("id=" + 1);
     $("#addMenuBtn").click(() => {
       addMenuFormBox(event, 0);
     });
     // 监听搜索框提交事件
     searchFormEvent((pageNo, pageSize, roleId) => {
-      queryMenus("roleId=" + roleId, "role");
+      queryMenus("id=" + roleId, "role");
     });
   });
 
   // 查询菜单树
   function queryMenus(params = "", type = "") {
     $.get(
-      ROUTE_MENU + "?" + (type === "" ? PARAM_ACTION_QUERY_ALL : PARAM_ACTION_QUERY_BY_ROLE_ID),
+      ROUTE_USER_MENU + "?" + (type === "" ? PARAM_ACTION_QUERY_BY_USER_ID : PARAM_ACTION_QUERY_BY_ROLE_ID),
       params,
       (res) => {
         // 如果请求失败
@@ -52,7 +52,7 @@
   function menuDetail(menuId) {
     $.get(
       ROUTE_MENU + "?" + PARAM_ACTION_QUERY_BY_MENU_ID,
-      "menuId=" + menuId,
+      "id=" + menuId,
       (res) => {
         if (!res.success) {
           failMessageFloat(res.msg);
@@ -78,7 +78,7 @@
           return;
         }
         successMessageFloat(res.msg);
-        queryMenus();
+        queryMenus("id=" + 1);
       },
     });
   }
@@ -91,18 +91,11 @@
   }
 
   // 删除菜单
-  function deleteMenus(menuIds) {
-    let data = [];
-    if (typeof menuIds === "number") {
-      data.push(menuIds);
-    } else {
-      data = menuIds;
-    }
+  function deleteMenus(menuId) {
     $.ajax({
       url: ROUTE_MENU + "?" + PARAM_ACTION_DELETE,
       type: "POST",
-      contentType: "application/json",
-      data: JSON.stringify(data),
+      data: "id=" + menuId,
       success: function (res) {
         // 请求成功后的回调函数
         if (!res.success) {
@@ -110,7 +103,7 @@
           return;
         }
         successMessageFloat(res.msg);
-        queryMenus();
+        queryMenus("id=" + 1);
       },
     });
   }
@@ -129,7 +122,7 @@
           return;
         }
         successMessageFloat(res.msg);
-        queryMenus();
+        queryMenus("id=" + 1);
       },
     });
   }

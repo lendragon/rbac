@@ -25,10 +25,9 @@ import java.util.List;
 public class UserMapperImpl extends GeneralMapper implements IUserMapper {
 
     /**
-     * 分页模糊查询所有用户
-     *
      * @param pageBean 分页查询参数, pageNo, pageSize, keyword
-     * @return
+     * @return PageBean<User> 用户分页结果
+     * @description 分页模糊查询所有用户
      */
     @Override
     public PageBean<User> queryAll(PageBean<User> pageBean) throws SQLException {
@@ -42,12 +41,12 @@ public class UserMapperImpl extends GeneralMapper implements IUserMapper {
         ApexRowSet rs = null;
         try {
             StringBuilder sql = new StringBuilder();
-            sql.append("select ID, FUserCode, FName, FSex, FBirthDay,");
+            sql.append("select ID, FUserName, FName, FSex, FBirthDay,");
             sql.append("FPhoneNum, FState, FCreateTime, FUpdateTime ");
-            sql.append("from CT_Rbac_User where FState != 2 ");
+            sql.append("from CT_Rbac_User where 1 = 1 ");
             // 模糊查询拼接SQL
             if (!Util.isEmpty(keyword)) {
-                SQLUtil.likeContact(sql, "FUserCode", "FName", "FBirthDay", "FPhoneNum");
+                SQLUtil.likeContact(sql, "FUserName", "FName", "FBirthDay", "FPhoneNum");
             }
             ApexDao dao = new ApexDao();
             dao.prepareStatement(sql.toString());
@@ -56,10 +55,12 @@ public class UserMapperImpl extends GeneralMapper implements IUserMapper {
             }
             rs = dao.getRowSet(getDataSource(), pageNo, pageSize, null);
             pageBean.setTotal(rs.getCount());
+
+            User user = null;
             while (rs.next()) {
-                User user = new User();
+                user = new User();
                 user.setId(rs.getLong("ID"));
-                user.setUserCode(rs.getString("FUserCode"));
+                user.setUserName(rs.getString("FUserName"));
                 user.setName(rs.getString("FName"));
                 user.setSex(rs.getInt("FSex"));
                 user.setBirthDay(rs.getDate("FBirthDay"));
@@ -69,77 +70,86 @@ public class UserMapperImpl extends GeneralMapper implements IUserMapper {
                 user.setUpdateTime(rs.getDate("FUpdateTime"));
                 users.add(user);
             }
-        }  finally {
+        } finally {
             closeResource(rs);
         }
         return pageBean;
     }
 
     /**
-     * 根据用户id查询用户
-     *
-     * @param userId 用户id
-     * @return
+     * @param id 用户主键
+     * @return User 用户
+     * @description 根据用户主键查询用户
      */
     @Override
-    public User queryByUserId(Long userId) throws Exception {
+    public User queryByUserId(Long id) throws Exception {
         User user = null;
         StringBuilder sql = new StringBuilder();
-        sql.append("select ID, FUserCode, FName, FSex, FBirthDay, FPhoneNum, FState,");
-        sql.append("FCreateTime, FUpdateTime from CT_Rbac_User where FState != 2 and ID = ? ");
+        sql.append("select ID, FUserName, FName, FSex, FBirthDay, FPhoneNum, FState,");
+        sql.append("FCreateTime, FUpdateTime from CT_Rbac_User where ID = ? ");
 
-        user = SQLTool.one(User.class, sql.toString(), userId);
+        user = SQLTool.one(User.class, sql.toString(), id);
         return user;
     }
 
     /**
-     * 根据角色id查询用户
-     *
-     * @param roleId 角色id
-     * @return
+     * @param id   用户主键
+     * @param password 密码
+     * @return boolean 密码是否正确
+     * @description 根据用户主键和密码查询密码是否正确
      */
     @Override
-    public List<Long> queryIdByRoleId(Long roleId) throws SQLException {
-        List<Long> userIds = new ArrayList<>();
+    public boolean queryByUserIdAndPassword(Long id, String password) throws Exception {
+        boolean isCorrect = false;
+        String sql = "select ID from CT_Rbac_User where ID = ? and FPassword = ?";
+        isCorrect = (SQLTool.one(User.class, sql, id, password) != null);
+
+        return isCorrect;
+    }
+
+    /**
+     * @param id 角色主键
+     * @return List<User> 用户列表
+     * @description 根据角色主键查询用户
+     */
+    @Override
+    public List<User> queryByRoleId(Long id) throws SQLException {
+        List<User> users = new ArrayList<>();
         ApexRowSet rs = null;
         try {
             StringBuilder sql = new StringBuilder();
-            sql.append("select ID from CT_Rbac_User where ID in ");
-            sql.append("(select FUserId from CT_Rbac_User_Role where FState != 2 and FRoleId = ?)");
+            sql.append("select ID, FUserName, FName, FSex, FBirthDay, FPhoneNum, FState, FCreateTime, FUpdateTime ");
+            sql.append("from CT_Rbac_User where ID in (select FUserId from CT_Rbac_User_Role where FRoleId = ?)");
 
             ApexDao dao = new ApexDao();
             dao.prepareStatement(sql.toString());
-            dao.setLong(1, roleId);
+            dao.setLong(1, id);
             rs = dao.getRowSet(getDataSource());
+
+            User user = null;
             while (rs.next()) {
-                userIds.add(rs.getLong("ID"));
+                user = new User();
+                user.setId(rs.getLong("ID"));
+                user.setUserName(rs.getString("FUserName"));
+                user.setName(rs.getString("FName"));
+                user.setSex(rs.getInt("FSex"));
+                user.setBirthDay(rs.getDate("FBirthDay"));
+                user.setPhoneNum(rs.getString("FPhoneNum"));
+                user.setState(rs.getInt("FState"));
+                user.setCreateTime(rs.getDate("FCreateTime"));
+                user.setUpdateTime(rs.getDate("FUpdateTime"));
+                users.add(user);
             }
         } finally {
             closeResource(rs);
         }
-        return userIds;
+        return users;
     }
 
     /**
-     * 根据用户编号查找用户id
-     *
-     * @param userCode 用户编号
-     * @return
-     */
-    @Override
-    public Long queryIdByUserCode(String userCode) throws Exception {
-        Long userId = null;
-        String sql = "select ID from CT_Rbac_User where FState != 2 and FUserCode = ?";
-        userId = SQLTool.one(Long.class, sql, userCode);
-
-        return userId;
-    }
-
-    /**
-     * 新增用户
-     *
      * @param user 用户
-     * @return
+     * @return int 影响的行数
+     * @description 新增用户
      */
     @Override
     public int add(User user) throws SQLException {
@@ -147,13 +157,13 @@ public class UserMapperImpl extends GeneralMapper implements IUserMapper {
         long nextId = getNextID(CommonConstants.TABLE_RBAC_USER);
         user.setId(nextId);
         StringBuilder sql = new StringBuilder();
-        sql.append("insert into CT_Rbac_User(ID, FUserCode, FName, FPassword, FSex, FBirthDay, FPhoneNum, FState,");
+        sql.append("insert into CT_Rbac_User(ID, FUserName, FName, FPassword, FSex, FBirthDay, FPhoneNum, FState,");
         sql.append("FCreateTime, FUpdateTime) values(?,?,?,?,?,?,?,?,?,?)");
 
         ApexDao dao = new ApexDao();
         dao.prepareStatement(sql.toString());
         dao.setLong(1, user.getId());
-        dao.setString(2, user.getUserCode());
+        dao.setString(2, user.getUserName());
         dao.setString(3, user.getName());
         dao.setString(4, user.getPassword());
         dao.setObject(5, user.getSex());
@@ -168,10 +178,9 @@ public class UserMapperImpl extends GeneralMapper implements IUserMapper {
     }
 
     /**
-     * 修改用户信息
-     *
      * @param user 用户
-     * @return
+     * @return int 影响的行数
+     * @description 修改用户信息
      */
     @Override
     public int update(User user) throws SQLException {
@@ -191,10 +200,14 @@ public class UserMapperImpl extends GeneralMapper implements IUserMapper {
         dao.setLong(7, user.getId());
 
         rows = dao.executeUpdate(getDataSource());
-
         return rows;
     }
 
+    /**
+     * @param user 用户
+     * @return int 影响的行数
+     * @description 修改用户密码
+     */
     @Override
     public int updatePassword(User user) throws SQLException {
         int rows = 0;
@@ -207,28 +220,22 @@ public class UserMapperImpl extends GeneralMapper implements IUserMapper {
         dao.setLong(3, user.getId());
 
         rows = dao.executeUpdate(getDataSource());
-
         return rows;
     }
 
     /**
-     * 删除用户, 即将用户的状态改成2, 删除
-     *
-     * @param userIds 用户id列表
-     * @return
+     * @param id 用户主键
+     * @return int 影响的行数
+     * @description 删除用户, 即将用户的状态改成2, 删除
      */
     @Override
-    public int delete(List<Long> userIds) throws SQLException {
+    public int delete(Long id) throws SQLException {
         int rows = 0;
-        StringBuilder sql = new StringBuilder();
-        sql.append("update CT_Rbac_User set FState = 2 where ID in ");
-        sql.append(SQLUtil.listToSQLList(userIds));
+        String sql = "update CT_Rbac_User set FState = 2 where ID = ? ";
 
         ApexDao dao = new ApexDao();
-        dao.prepareStatement(sql.toString());
-        for (int i = 0; i < userIds.size(); i++) {
-            dao.setLong(i + 1, userIds.get(i));
-        }
+        dao.prepareStatement(sql);
+        dao.setLong(1, id);
         rows = dao.executeUpdate(getDataSource());
 
         return rows;

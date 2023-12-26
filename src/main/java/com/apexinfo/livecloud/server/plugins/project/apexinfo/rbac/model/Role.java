@@ -2,6 +2,7 @@ package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model;
 
 import com.apexinfo.livecloud.server.common.annotation.Column;
 import com.apexinfo.livecloud.server.common.annotation.Table;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.annotation.Valid;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -16,34 +17,52 @@ import java.util.Date;
  */
 @Table("CT_Rbac_Role")
 public class Role {
-    // 角色id
+    /**
+     * 角色id
+     */
     @Column("ID")
-    @JsonProperty("roleId")
+    @Valid(skipCode = 1)
     private Long id;
-    // 角色编码
-    @Column("FRoleCode")
-    private String roleCode;
-    // 角色名称
+    /**
+     * 角色标识
+     */
+    @Column("FRoleName")
+    @Valid(skipCode = 2)
+    private String roleName;
+    /**
+     * 角色名称
+     */
     @Column("FName")
+    @Valid
     private String name;
-    // 角色状态
+    /**
+     * 角色状态
+     */
     @Column("FState")
+    @Valid(skipCode = 1)
     private Integer state;
-    // 角色描述
+    /**
+     * 角色描述
+     */
     @Column("FDescription")
     private String description;
-    // 创建时间
+    /**
+     * 创建时间
+     */
     @Column("FCreateTime")
     private Date createTime;
-    // 修改时间
+    /**
+     * 修改时间
+     */
     @Column("FUpdateTime")
     private Date updateTime;
+
     public Role() {
     }
 
-    public Role(Long id, String roleCode, String name, Integer state, String description, Date createTime, Date updateTime) {
+    public Role(Long id, String roleName, String name, Integer state, String description, Date createTime, Date updateTime) {
         this.id = id;
-        this.roleCode = roleCode;
+        this.roleName = roleName;
         this.name = name;
         this.state = state;
         this.description = description;
@@ -51,12 +70,12 @@ public class Role {
         this.updateTime = updateTime;
     }
 
-    public String getRoleCode() {
-        return roleCode;
+    public String getRoleName() {
+        return roleName;
     }
 
-    public void setRoleCode(String roleCode) {
-        this.roleCode = roleCode;
+    public void setRoleName(String roleName) {
+        this.roleName = roleName;
     }
 
     public void setState(Integer state) {

@@ -29,10 +29,9 @@ public class SQLUtil {
     private static final String SQL_SYMBOL_RIGHT = " ) ";
 
     /**
-     * ?拼接like查询
-     *
-     * @param sql sql语句
+     * @param sql    sql语句
      * @param params 参数列表
+     * @description ?拼接like查询
      */
     public static void likeContact(StringBuilder sql, String... params) {
         // and (
@@ -53,12 +52,11 @@ public class SQLUtil {
     }
 
     /**
-     * 将keyword预编译到sql中
-     *
-     * @param dao dao
+     * @param dao     dao
      * @param keyword 查询关键字
-     * @param offset 起始位置
-     * @param length 长度
+     * @param offset  起始位置
+     * @param length  长度
+     * @description 将keyword预编译到sql中
      */
     public static void setLikeSQL(ApexDao dao, String keyword, int offset, int length) {
         StringBuilder likeSQL = new StringBuilder();
@@ -72,10 +70,9 @@ public class SQLUtil {
     }
 
     /**
-     * 将List对象变成(?,?,?)的格式
-     *
      * @param list 列表
-     * @return
+     * @return String 结果
+     * @description 将List对象变成(?, ?, ?)的格式
      */
     public static String listToSQLList(List<?> list) {
         StringJoiner sj = new StringJoiner(SQL_SYMBOL_COMMA, SQL_SYMBOL_LEFT, SQL_SYMBOL_RIGHT);

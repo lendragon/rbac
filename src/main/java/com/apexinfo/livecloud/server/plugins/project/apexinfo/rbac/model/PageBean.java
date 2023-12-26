@@ -13,15 +13,25 @@ import java.util.List;
  * @Version 1.0
  */
 public class PageBean<R> {
-    // 获取到的记录
+    /**
+     * 获取到的记录
+     */
     private List<R> records;
-    // 页码
+    /**
+     * 页码
+     */
     private int pageNo;
-    // 页长
+    /**
+     * 页长
+     */
     private int pageSize;
-    // 总数
+    /**
+     * 总数
+     */
     private int total;
-    // 查询关键字
+    /**
+     * 查询关键字
+     */
     private String keyword;
 
     public PageBean() {

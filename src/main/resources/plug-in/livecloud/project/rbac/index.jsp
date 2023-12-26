@@ -62,11 +62,14 @@
         "${pageContext.request.contextPath}/livecloud/project/roleMenu.pagex";
       const ROUTE_MENU =
         "${pageContext.request.contextPath}/livecloud/project/menu.pagex";
+        const ROUTE_USER_MENU =
+        "${pageContext.request.contextPath}/livecloud/project/userMenu.pagex";
       const PARAM_ACTION_QUERY_ALL = "action=queryAll";
       const PARAM_ACTION_QUERY_BY_USER_ID = "action=queryByUserId";
       const PARAM_ACTION_QUERY_BY_ROLE_ID = "action=queryByRoleId";
       const PARAM_ACTION_QUERY_BY_MENU_ID = "action=queryByMenuId";
       const PARAM_ACTION_UPDATE = "action=update";
+      const PARAM_ACTION_UPDATE_PASSWORD = "action=updatePassword";
       const PARAM_ACTION_ADD = "action=add";
       const PARAM_ACTION_DELETE = "action=delete";
       

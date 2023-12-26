@@ -1,10 +1,12 @@
 package com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.service;
 
-import com.apexinfo.livecloud.server.plugins.product.mobile.extend.DemoService;
+import com.apex.livebos.console.common.util.Util;
+import com.apexinfo.livecloud.server.core.Core;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.constant.CommonConstants;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.IMenuMapper;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.mapper.impl.MenuMapperImpl;
 import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.Menu;
-import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.model.StateEnum;
+import com.apexinfo.livecloud.server.plugins.project.apexinfo.rbac.util.ValidUtil;
 import org.apache.log4j.Logger;
 
 import java.sql.SQLException;
@@ -18,7 +20,8 @@ import java.util.*;
  * @Version 1.0
  */
 public class MenuService {
-    private static final Logger logger = Logger.getLogger(DemoService.class);
+    // 日志输出对象
+    private static final Logger logger = Logger.getLogger(MenuService.class);
 
     private static MenuService instance;
 
@@ -36,25 +39,24 @@ public class MenuService {
     }
 
     /**
-     * 递归将菜单列表变成菜单树
-     *
      * @param currentMenu 当前菜单
      * @param menuList    所有菜单列表
+     * @return List<Menu> 菜单树列表
+     * @description 递归将菜单列表变成菜单树
      */
     private List<Menu> buildMenuTree(Menu currentMenu, List<Menu> menuList) {
         if (currentMenu == null) {
             List<Menu> menuTree = new ArrayList<>();
             // 构建菜单树
             for (Menu menu : menuList) {
-                // 父菜单id为0, 表示第一层级的菜单
-                if (menu.getParentId() == 0) {
+                // 父菜单主键为0, 表示第一层级的菜单
+                if (Objects.equals(menu.getParentId(), CommonConstants.DATA_COMMON_ROOT_MENU)) {
                     menu.setChildren(buildMenuTree(menu, menuList));
                     menuTree.add(menu);
                 }
             }
             return menuTree;
         }
-
 
         List<Menu> children = new ArrayList<>();
         currentMenu.setChildren(children);
@@ -71,15 +73,21 @@ public class MenuService {
     }
 
     /**
-     * 查询菜单树
-     *
-     * @return
+     * @param id 用户主键
+     * @return List<Menu> 菜单树
+     * @description 根据用户主键查询菜单树
      */
-    public List<Menu> queryAllToTree() {
+    public List<Menu> queryToTreeByUserId(Long id) {
         List<Menu> menusTree = null;
         try {
-            // 查询所有菜单
-            List<Menu> menuList = menuMapper.queryAll();
+            List<Menu> menuList = null;
+            if (Objects.equals(id, CommonConstants.DATA_COMMON_ROOT_ADMIN)) {
+                // 如果是超级管理员直接全部查询
+                menuList = menuMapper.queryAll();
+            } else {
+                // 根据用户主键查询菜单
+                menuList = menuMapper.queryByUserId(id);
+            }
             // 构建菜单树
             menusTree = buildMenuTree(null, menuList);
         } catch (SQLException e) {
@@ -90,16 +98,15 @@ public class MenuService {
     }
 
     /**
-     * 根据用户id查询菜单树
-     *
-     * @param userId 用户id
-     * @return
+     * @param id 角色主键
+     * @return List<Menu> 菜单树
+     * @description 根据角色主键查询菜单树
      */
-    public List<Menu> queryToTreeByUserId(Long userId) {
+    public List<Menu> queryToTreeByRoleId(Long id) {
         List<Menu> menusTree = null;
         try {
-            // 根据用户id查询菜单
-            List<Menu> menuList = menuMapper.queryByUserId(userId);
+            // 根据角色主键查询菜单
+            List<Menu> menuList = menuMapper.queryByRoleId(id);
             // 构建菜单树
             menusTree = buildMenuTree(null, menuList);
         } catch (SQLException e) {
@@ -110,35 +117,14 @@ public class MenuService {
     }
 
     /**
-     * 根据角色id查询菜单树
-     *
-     * @param roleId 角色id
-     * @return
+     * @param id 菜单主键
+     * @return Menu 菜单
+     * @description 根据菜单主键查询菜单
      */
-    public List<Menu> queryToTreeByRoleId(Long roleId) {
-        List<Menu> menusTree = null;
-        try {
-            // 根据角色id查询菜单
-            List<Menu> menuList = menuMapper.queryByRoleId(roleId);
-            // 构建菜单树
-            menusTree = buildMenuTree(null, menuList);
-        } catch (SQLException e) {
-            e.printStackTrace();
-            logger.error(e.getMessage(), e);
-        }
-        return menusTree;
-    }
-
-    /**
-     * 根据菜单id查询菜单
-     *
-     * @param menuId 菜单id
-     * @return
-     */
-    public Menu queryByMenuId(Long menuId) {
+    public Menu queryByMenuId(Long id) {
         Menu menu = null;
         try {
-            menu = menuMapper.queryByMenuId(menuId);
+            menu = menuMapper.queryByMenuId(id);
         } catch (Exception e) {
             e.printStackTrace();
             logger.error(e.getMessage(), e);
@@ -147,23 +133,55 @@ public class MenuService {
     }
 
     /**
-     * 新增菜单
-     *
-     * @param menu 菜单
-     * @return
+     * @param id 菜单主键
+     * @return List<Long> 子菜单主键列表
+     * @description 根据菜单主键查询子菜单主键列表
      */
-    public int add(Menu menu) {
+    public List<Long> queryChildrenIdsByMenuId(Long id) {
+        List<Long> menuChildrenIds = null;
+        try {
+            menuChildrenIds = menuMapper.queryChildrenIdsByMenuId(id);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+        }
+        return menuChildrenIds;
+    }
+
+    /**
+     * @param id 角色主键
+     * @return List<Menu> 菜单列表
+     * @description 根据角色主键查询菜单
+     */
+    public List<Menu> queryByIdOfRole(Long id) {
+        List<Menu> menus = null;
+        try {
+            // 根据角色主键查询菜单
+            menus = menuMapper.queryByRoleId(id);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+        }
+        return menus;
+    }
+
+    /**
+     * @param menu 菜单
+     * @return boolean 是否成功
+     * @description 新增菜单
+     */
+    public boolean add(Menu menu) {
         int rows = 0;
         try {
             // 根据parentId查询菜单, 获取菜单层级
-            if (menu.getParentId() == null) {
+            if (menu.getParentId().equals(CommonConstants.DATA_COMMON_ROOT_MENU)) {
                 menu.setLevel(1);
             } else {
                 Menu parentMenu = menuMapper.queryByMenuId(menu.getParentId());
                 menu.setLevel(parentMenu.getLevel() + 1);
             }
 
-            menu.setState(StateEnum.正常.ordinal());
+            menu.setState(CommonConstants.DATA_COMMON_DEFAULT_STATE);
             menu.setCreateTime(new Date());
             menu.setUpdateTime(menu.getCreateTime());
             rows = menuMapper.add(menu);
@@ -171,16 +189,15 @@ public class MenuService {
             e.printStackTrace();
             logger.error(e.getMessage(), e);
         }
-        return rows;
+        return rows > 0;
     }
 
     /**
-     * 修改菜单
-     *
      * @param menu 菜单
-     * @return
+     * @return boolean 是否成功
+     * @description 修改菜单
      */
-    public int update(Menu menu) {
+    public boolean update(Menu menu) {
         int rows = 0;
         try {
             // 根据parentId查询菜单, 获取菜单层级
@@ -192,23 +209,35 @@ public class MenuService {
             e.printStackTrace();
             logger.error(e.getMessage(), e);
         }
-        return rows;
+        return rows > 0;
     }
 
     /**
-     * 删除菜单
-     *
-     * @param menuIds 菜单id列表
-     * @return
+     * @param id 菜单主键
+     * @return boolean 是否成功
+     * @description 删除菜单
      */
-    public int delete(List<Long> menuIds) {
+    public boolean delete(Long id) {
         int rows = 0;
         try {
-            rows = menuMapper.delete(menuIds);
-        } catch (SQLException e) {
+            // 如果菜单有角色关联, 则不能删除
+            List<Long> ids = RoleService.getInstance().queryIdsByMenuId(id);
+            if (Util.isNotEmpty(ids)) {
+                throw new RuntimeException(Core.i18n().getValue(CommonConstants.I18N_MENU_ERROR_REQUIRED_BY_ROLE));
+            }
+
+            // 如果菜单有子菜单, 则不能删除
+            List<Long> menuChildrenIds = MenuService.getInstance().queryChildrenIdsByMenuId(id);
+            if (Util.isNotEmpty(menuChildrenIds)) {
+                throw new RuntimeException(Core.i18n().getValue(CommonConstants.I18N_MENU_ERROR_REQUIRED_BY_CHILDREN));
+            }
+
+            rows = menuMapper.delete(id);
+        } catch (Exception e) {
             e.printStackTrace();
             logger.error(e.getMessage(), e);
+            throw new RuntimeException(e.getMessage());
         }
-        return rows;
+        return rows > 0;
     }
 }

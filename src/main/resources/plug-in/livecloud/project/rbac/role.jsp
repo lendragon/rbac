@@ -3,9 +3,6 @@
 <div class="row">
   <div class="col-md-9">
     <button id="addRoleBtn" class="btn btn-primary">新增</button>
-    <button id="batchDeleteBtn" class="btn btn-danger" disabled>
-      批量删除
-    </button>
   </div>
   <div class="col-md-3">
     <form id="searchForm" class="form-inline" role="search">
@@ -22,7 +19,7 @@
   <thead>
     <tr>
       <th><input type="checkbox" id="select-all" /></th>
-      <th>角色编码</th>
+      <th>角色标识</th>
       <th>角色名</th>
       <th>角色状态</th>
       <th>角色描述</th>
@@ -47,7 +44,6 @@
     // 监听搜索框提交事件
     searchFormEvent(queryRoles);
     $("#addRoleBtn").click(addRoleFormBox);
-    $("#batchDeleteBtn").click(batchDelete);
   });
 
   // 查询角色
@@ -78,8 +74,8 @@
         let total = res.data.total;
         let pageSize = res.data.pageSize;
         let properties = [
-          "roleId",
-          "roleCode",
+          "id",
+          "roleName",
           "name",
           "state",
           "description",
@@ -103,7 +99,7 @@
   function roleDetail(roleId) {
     $.get(
       ROUTE_ROLE + "?" + PARAM_ACTION_QUERY_BY_ROLE_ID,
-      "roleId=" + roleId,
+      "id=" + roleId,
       (res) => {
         if (!res.success) {
           failMessageFloat(res.msg);
@@ -121,18 +117,18 @@
       "角色详情",
       [
         {
-          label: "角色id",
+          label: "角色主键",
           type: "hidden",
-          name: "roleId",
-          value: role.roleId,
+          name: "id",
+          value: role.id,
         },
         {
-          label: "角色编码",
+          label: "角色标识",
           type: "text",
-          name: "roleCode",
+          name: "roleName",
           required: true,
           disabled: true,
-          value: role.roleCode,
+          value: role.roleName,
         },
         {
           label: "角色名",
@@ -152,13 +148,13 @@
           options: [
             {
               name: "正常",
-              value: "0",
-              checked: role.state === 0,
+              value: "1",
+              checked: role.state === 1,
             },
             {
               name: "禁用",
-              value: "1",
-              checked: role.state === 1,
+              value: "0",
+              checked: role.state === 0,
             },
           ],
           placeholder: "角色状态",
@@ -204,8 +200,8 @@
   function roleQueryUser(roleId) {
     // 获取角色对应的用户
     $.get(
-      ROUTE_USER + "?" + PARAM_ACTION_QUERY_BY_ROLE_ID,
-      "roleId=" + roleId,
+      ROUTE_USER_ROLE + "?" + PARAM_ACTION_QUERY_BY_ROLE_ID,
+      "id=" + roleId,
       (res) => {
         if (!res.success) {
           failMessageFloat(res.msg);
@@ -234,7 +230,7 @@
 
   function roleQueryUserTableBox(roleId, userRoles, users) {
     let tableHead = [
-      "用户编码",
+      "用户标识",
       "用户名",
       "性别",
       "出生日期",
@@ -242,8 +238,8 @@
       "用户状态",
     ];
     let properties = [
-      "userId",
-      "userCode",
+      "id",
+      "userName",
       "name",
       "sex",
       "birthDay",
@@ -251,6 +247,10 @@
       "state",
     ];
     let tableData = changeJsonToArr(properties, users);
+    let userRolesId = []
+    $.each(userRoles, function (index, obj) {
+      userRolesId.push(obj.id);
+    });
 
     let deleteList = []; // 要删除的列表
     let addList = []; // 要添加的列表
@@ -268,7 +268,7 @@
       () => {
         // 角色有的用户多选框要自动勾选
         $(`#userTable input[type='checkbox']`).each(function () {
-          if ($.inArray(parseInt($(this).val()), userRoles) !== -1) {
+          if ($.inArray(parseInt($(this).val()), userRolesId) !== -1) {
             $(this).prop("checked", "true");
           }
         });
@@ -312,7 +312,7 @@
   // 修改用户角色关联
   function updateUserRole(roleId, addList, deleteList) {
     let data = {};
-    data.roleId = roleId;
+    data.id = roleId;
     data.addIds = addList;
     data.deleteIds = deleteList;
     $.ajax({
@@ -335,8 +335,8 @@
   function roleMenuDetail(roleId) {
     // 查询角色菜单
     $.get(
-      ROUTE_MENU + "?" + PARAM_ACTION_QUERY_BY_ROLE_ID,
-      "roleId=" + roleId,
+      ROUTE_ROLE_MENU + "?" + PARAM_ACTION_QUERY_BY_ROLE_ID,
+      "id=" + roleId,
       (res) => {
         if (!res.success) {
           failMessageFloat(res.msg);
@@ -344,7 +344,7 @@
         }
         let roleMenus = res.data;
         // 查询所有菜单
-        $.get(ROUTE_MENU + "?" + PARAM_ACTION_QUERY_ALL, (res) => {
+        $.get(ROUTE_USER_MENU + "?" + PARAM_ACTION_QUERY_BY_USER_ID, "id=" + 1, (res) => {
           if (!res.success) {
             failMessageFloat(res.msg);
             return;
@@ -485,13 +485,13 @@
   function getIdsToArray(data) {
     let ids = [];
     $.each(data, function (index, value) {
-      ids.push(value.menuId);
+      ids.push(value.id);
       if (value.children) {
         $.each(value.children, function (index, value) {
-          ids.push(value.menuId);
+          ids.push(value.id);
           if (value.children) {
             $.each(value.children, function (index, value) {
-              ids.push(value.menuId);
+              ids.push(value.id);
             });
           }
         });
@@ -504,7 +504,7 @@
     return menus.map((item) => ({
       text:
         `<input type="hidden" value="` +
-        item.menuId +
+        item.id +
         `" parentId="` +
         item.parentId +
         `">` +
@@ -516,7 +516,7 @@
           <button
             class="btn btn-info btn-sm btn-tree"
             onclick="event.stopPropagation(); menuDetail(` +
-        item.menuId +
+        item.id +
         `);"
           >
             <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
@@ -527,14 +527,14 @@
           ? convertToTreeDataOverride(originList, item.children)
           : null,
       state: {
-        checked: $.inArray(item.menuId, originList) !== -1,
+        checked: $.inArray(item.id, originList) !== -1,
       },
     }));
   }
 
   function updateRoleMenu(roleId, addList, deleteList) {
     let data = {};
-    data.roleId = roleId;
+    data.id = roleId;
     data.addIds = addList;
     data.deleteIds = deleteList;
     $.ajax({
@@ -556,13 +556,13 @@
   function menuDetail(menuId) {
     $.get(
       ROUTE_MENU + "?" + PARAM_ACTION_QUERY_BY_MENU_ID,
-      "menuId=" + menuId,
+      "id=" + menuId,
       (res) => {
         if (!res.success) {
           failMessageFloat(res.msg);
           return;
         }
-        menu = res.data[0];
+        menu = res.data;
         menuDetailFormBox(menu, true);
       }
     );
@@ -607,19 +607,11 @@
   }
 
   // 删除角色
-  function deleteRoles(roleIds) {
-    let data = [];
-    if (typeof roleIds === "number") {
-      data.push(roleIds);
-    } else {
-      data = roleIds;
-    }
-
+  function deleteRoles(roleId) {
     $.ajax({
       url: ROUTE_ROLE + "?" + PARAM_ACTION_DELETE,
       type: "POST",
-      contentType: "application/json",
-      data: JSON.stringify(data),
+      data: "id=" + roleId,
       success: function (res) {
         if (!res.success) {
           failMessageFloat(res.msg);
@@ -657,11 +649,11 @@
       "新增角色",
       [
         {
-          label: "角色编码",
+          label: "角色标识",
           type: "text",
-          name: "roleCode",
+          name: "roleName",
           required: true,
-          placeholder: "角色编码",
+          placeholder: "角色标识",
           reg: "^[0-9A-Za-z_]{5,16}$",
           regTitle: "请输入5-16位字母、数字或下划线",
         },
@@ -682,12 +674,12 @@
           options: [
             {
               name: "正常",
-              value: "0",
+              value: "1",
               checked: true,
             },
             {
               name: "禁用",
-              value: "1",
+              value: "0",
             },
           ],
           placeholder: "角色状态",

@@ -439,7 +439,7 @@ function createTree(id, data, hasBtn = true, hasCheckBox = true, hasDetail = tru
 
 function convertToTreeData(data, hasBtn, hasCheckBox = true, detailBtn = true, addBtn = true, deleteBtn = true) {
   return data.map((item) => ({
-    text: (hasCheckBox ? `<input type="hidden" value="${item.menuId}" parentId="${item.parentId}">` : "") +
+    text: (hasCheckBox ? `<input type="hidden" value="${item.id}" parentId="${item.parentId}">` : "") +
       item.name + `<span class="label label-info margin-5">${item.children.length}</span>` +
       (hasBtn ? treeBtnHtml(item, detailBtn, addBtn, deleteBtn) : ""),
     nodes: item.children.length >= 1 ? convertToTreeData(item.children, hasBtn, hasCheckBox, detailBtn, addBtn, deleteBtn) : null,
@@ -453,7 +453,7 @@ function treeBtnHtml(elem, detailBtn = true, addBtn = true, deleteBtn = true) {
     treeBtn += `
       <button
         class="btn btn-info btn-sm btn-tree"
-        onclick="event.stopPropagation(); menuDetail(${elem.menuId});"
+        onclick="event.stopPropagation(); menuDetail(${elem.id});"
       >
         <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
       </button>`;
@@ -461,7 +461,7 @@ function treeBtnHtml(elem, detailBtn = true, addBtn = true, deleteBtn = true) {
   if (addBtn) {
     treeBtn += `<button
         class="btn btn-primary btn-sm btn-tree"
-        onclick="event.stopPropagation(); addChild(${elem.menuId});"
+        onclick="event.stopPropagation(); addChild(${elem.id});"
       >
         <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
       </button>`
@@ -469,7 +469,7 @@ function treeBtnHtml(elem, detailBtn = true, addBtn = true, deleteBtn = true) {
   if (deleteBtn) {
     treeBtn += `<button
       class="btn btn-danger btn-sm btn-tree"
-      onclick="event.stopPropagation(); deleteMenusBox(${elem.menuId});"
+      onclick="event.stopPropagation(); deleteMenusBox(${elem.id});"
     > 
       <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
       </button>`;
@@ -511,6 +511,12 @@ function createTable(selector, menuName, data, hasBtn = true, btnDataIndex = 0) 
             onclick="userMenuDetail(${items[btnDataIndex]})"
           >
             菜单
+          </button>
+          <button
+            class="btn btn-link btn-no-underline btn-text-size"
+            onclick="updatePasswordFormBox(${items[btnDataIndex]})"
+          >
+            修改密码
           </button>`
       } else if (menuName === "role") {
         displayHtml +=
@@ -574,8 +580,8 @@ function menuDetailFormBox(menu, readonly = false) {
     [{
         label: "ID",
         type: "hidden",
-        name: "menuId",
-        value: menu.menuId,
+        name: "id",
+        value: menu.id,
       },
       {
         label: "菜单名",
@@ -638,13 +644,13 @@ function menuDetailFormBox(menu, readonly = false) {
         disabled: readonly,
         options: [{
             name: "正常",
-            value: "0",
-            checked: menu.state === 0,
+            value: "1",
+            checked: menu.state === 1,
           },
           {
             name: "禁用",
-            value: "1",
-            checked: menu.state === 1,
+            value: "0",
+            checked: menu.state === 0,
           },
         ],
         placeholder: "菜单状态",
@@ -726,8 +732,6 @@ function createTableBox(tableId, title, tableHead, tableData, confirmFun, create
     $("#cancleBtn").click(() => {
       $(confirmModal).modal("hide");
     });
-    // 创建分页组件
-    createPageBtn(1, true, "queryUsers", "tableBtnUl", "TableLastPageBtn", "TableNextPageBtn");
   });
 
   // 表格创建完成后事件
